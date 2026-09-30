@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../lib/store'
 import { STATUSES, OPEN_STATUSES, PRIORITIES, isOverdue } from '../lib/constants'
 import ItemCard from '../components/ItemCard'
+import { PageHeader, StatusDot } from '../components/ui'
 
 export default function MyTasks() {
   const { items, me, activeMembers } = useApp()
@@ -19,24 +20,23 @@ export default function MyTasks() {
 
   return (
     <div>
-      <div className="view-head">
-        <h2>{who === me?.id ? 'Mis tareas' : 'Tareas de'}</h2>
-        <select value={who} onChange={e => setWho(e.target.value)}>
+      <PageHeader title={who === me?.id ? 'Mis tareas' : 'Tareas de'}>
+        <select value={who} onChange={e => setWho(e.target.value)} aria-label="Persona">
           {activeMembers.map(m => <option key={m.id} value={m.id}>{m.full_name}{m.id === me?.id ? ' (yo)' : ''}</option>)}
         </select>
         <label className="check"><input type="checkbox" checked={onlySprint} onChange={e => setOnlySprint(e.target.checked)} /> Solo sprint activo</label>
-      </div>
+      </PageHeader>
       <div className="stats">
-        <div className="stat"><b>{mine.length}</b><span>abiertas</span></div>
-        <div className="stat"><b>{pts}</b><span>story points</span></div>
-        <div className={'stat' + (overdue ? ' bad' : '')}><b>{overdue}</b><span>vencidas</span></div>
+        <div className="stat"><span>Abiertas</span><b>{mine.length}</b></div>
+        <div className="stat"><span>Story points</span><b>{pts}</b></div>
+        <div className={'stat' + (overdue ? ' bad' : '')}><span>Vencidas</span><b>{overdue}</b></div>
       </div>
       <div className="board">
         {OPEN_STATUSES.map(s => (
           <section key={s} className="column">
-            <header style={{ borderTopColor: STATUSES[s].color }}>
-              <span>{STATUSES[s].label}</span>
-              <span className="muted small">{mine.filter(i => i.status === s).length}</span>
+            <header>
+              <span className="column-title"><StatusDot status={s} />{STATUSES[s].label}</span>
+              <span className="column-count">{mine.filter(i => i.status === s).length}</span>
             </header>
             <div className="column-body">
               {mine.filter(i => i.status === s).map(i => <ItemCard key={i.id} item={i} />)}

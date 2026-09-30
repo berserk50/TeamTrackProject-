@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { fmtDateTime, humanValue } from '../lib/constants'
 import { Avatar } from './ui'
+import { Link, itemPath, keyLabel } from '../lib/router'
 
 const ACTION_LABELS = {
   creado: 'creó',
@@ -60,8 +61,8 @@ export default function HistoryList({ itemId, filters = {} }) {
                 <b>{h.actor_name ?? 'Sistema'}</b> {ACTION_LABELS[h.action] ?? h.action}{' '}
                 {!itemId && (
                   itemsById[h.item_id]
-                    ? <a onClick={() => setOpenItem({ id: h.item_id })}>{h.item_label}</a>
-                    : <span className="strike-if-deleted">{h.item_label}</span>
+                    ? <Link to={itemPath(h.item_id)}>{keyLabel(h.item_label)}</Link>
+                    : <span className="strike-if-deleted">{keyLabel(h.item_label)}</span>
                 )}
                 {h.action === 'modificado' && <> · <i>{h.field}</i>: {humanValue(h.field, h.old_value)} → <b>{humanValue(h.field, h.new_value)}</b></>}
                 {h.action === 'creado' && <> ({humanValue('tipo', h.new_value)})</>}

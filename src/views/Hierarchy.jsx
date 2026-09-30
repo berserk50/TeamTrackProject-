@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useApp } from '../lib/store'
-import { TypeBadge, StatusBadge, PriorityBadge, Avatar } from '../components/ui'
+import { TypeBadge, StatusBadge, PriorityBadge, Assignee, Progress, PageHeader } from '../components/ui'
+import { ChevronIcon, PlusIcon } from '../components/icons'
+import { Link, itemKey, itemPath } from '../lib/router'
 
 function progress(item, childrenOf) {
   // % de hijos cerrados (recursivo, sin contar cancelados)
@@ -42,26 +44,25 @@ export default function Hierarchy() {
     const isCollapsed = collapsed.has(item.id)
     return (
       <>
-        <div className="tree-row" style={{ paddingLeft: 12 + depth * 26 }}>
-          <span className="twisty" onClick={() => kids.length && toggle(item.id)}>
-            {kids.length ? (isCollapsed ? '▸' : '▾') : ''}
-          </span>
+        <div className="tree-row" style={{ '--depth': depth }}>
+          {kids.length
+            ? <button type="button" className={'twisty' + (isCollapsed ? '' : ' open')} onClick={() => toggle(item.id)}
+                      aria-label={isCollapsed ? 'Expandir' : 'Contraer'} aria-expanded={!isCollapsed}><ChevronIcon size={14} /></button>
+            : <span className="twisty" />}
           <TypeBadge type={item.type} />
-          <a className="grow" onClick={() => setOpenItem({ id: item.id })}>#{item.id} {item.title}</a>
-          {pct != null && (
-            <span className="progress" title={`${pct}% de los hijos cerrados`}>
-              <span style={{ width: pct + '%' }} /><em>{pct}%</em>
-            </span>
-          )}
-          <PriorityBadge priority={item.priority} />
-          <StatusBadge status={item.status} />
-          <Avatar member={membersById[item.assignee_id]} size={22} />
-          {canEdit && item.type !== 'tarea' && item.type !== 'bug' && (
-            <button className="btn ghost xs" title="Agregar hijo" onClick={() => setOpenItem({
-              new: true,
-              defaults: { type: item.type === 'epica' ? 'historia' : 'tarea', parent_id: item.id, sprint_id: item.sprint_id },
-            })}>+</button>
-          )}
+          <Link className="grow tree-title" to={itemPath(item.id)}><span className="muted">{itemKey(item.id)}</span> {item.title}</Link>
+          <span className="tree-meta">
+            {pct != null && <Progress value={pct} title={`${pct}% de los hijos cerrados`} />}
+            <PriorityBadge priority={item.priority} />
+            <StatusBadge status={item.status} />
+            <Assignee member={membersById[item.assignee_id]} short />
+            {canEdit && item.type !== 'tarea' && item.type !== 'bug' && (
+              <button className="btn ghost icon xs" title="Agregar hijo" aria-label="Agregar hijo" onClick={() => setOpenItem({
+                new: true,
+                defaults: { type: item.type === 'epica' ? 'historia' : 'tarea', parent_id: item.id, sprint_id: item.sprint_id },
+              })}><PlusIcon size={14} /></button>
+            )}
+          </span>
         </div>
         {!isCollapsed && kids.map(k => <Node key={k.id} item={k} depth={depth + 1} />)}
       </>
@@ -70,18 +71,16 @@ export default function Hierarchy() {
 
   return (
     <div>
-      <div className="view-head">
-        <h2>Jerarquía</h2>
-        <span className="muted small">Épica → Historia de usuario → Tarea / Bug</span>
+      <PageHeader title="Jerarquía" subtitle="Épica → Historia de usuario → Tarea / Bug">
         <label className="check"><input type="checkbox" checked={showClosed} onChange={e => setShowClosed(e.target.checked)} /> Incluir cerrados y cancelados</label>
-      </div>
+      </PageHeader>
       <div className="tree card">
-        {epics.length === 0 && <p className="muted pad">No hay épicas abiertas.</p>}
+        {epics.length === 0 && <p className="empty-state">No hay épicas abiertas.</p>}
         {epics.map(e => <Node key={e.id} item={e} depth={0} />)}
       </div>
       {orphans.length > 0 && (
         <>
-          <h3 className="sub">Sin épica ({orphans.length})</h3>
+          <h2 className="section-title">Sin épica ({orphans.length})</h2>
           <div className="tree card">{orphans.map(o => <Node key={o.id} item={o} depth={0} />)}</div>
         </>
       )}

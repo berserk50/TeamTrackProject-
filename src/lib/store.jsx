@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { supabase, errorText } from './supabase'
+import { navigate, itemPath } from './router'
 
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
@@ -12,14 +13,21 @@ export function AppProvider({ session, visitor, onSignOut, children }) {
   const [sprints, setSprints] = useState([])
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const [openItem, setOpenItem] = useState(null)   // { id } | { new: true, defaults }
+  const [openItem, setNewItem] = useState(null)   // { new: true, defaults } — formulario de creación
+  // Un ítem existente se abre en su propia URL (/browse/TT-12); uno nuevo, en la ventana de creación
+  const setOpenItem = useCallback((target) => {
+    if (target && !target.new && target.id != null) navigate(itemPath(target.id))
+    else setNewItem(target)
+  }, [])
   const [toasts, setToasts] = useState([])
 
-  const toast = useCallback((text, kind = 'ok') => {
+  // action opcional: { label, onClick } — muestra un enlace dentro del aviso
+  const toast = useCallback((text, kind = 'ok', action = null) => {
     const id = Math.random()
-    setToasts(t => [...t, { id, text, kind }])
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 4500)
+    setToasts(t => [...t, { id, text, kind, action }])
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), action ? 8000 : 4500)
   }, [])
+  const dismissToast = useCallback((id) => setToasts(t => t.filter(x => x.id !== id)), [])
 
   const fail = useCallback((error) => { toast(errorText(error), 'error') }, [toast])
 
@@ -69,7 +77,7 @@ export function AppProvider({ session, visitor, onSignOut, children }) {
     membersById: Object.fromEntries(members.map(m => [m.id, m])),
     sprintsById: Object.fromEntries(sprints.map(s => [s.id, s])),
     loadMembers, loadSprints, loadItems, reloadAll,
-    openItem, setOpenItem, toast, fail, toasts,
+    openItem, setOpenItem, toast, dismissToast, fail, toasts,
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

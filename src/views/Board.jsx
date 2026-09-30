@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useApp, updateItem } from '../lib/store'
 import { STATUSES, OPEN_STATUSES, PRIORITIES } from '../lib/constants'
-import { FilterBar, applyFilters, EMPTY_FILTERS, ReasonDialog } from '../components/ui'
+import { FilterBar, applyFilters, EMPTY_FILTERS, ReasonDialog, PageHeader, StatusDot } from '../components/ui'
 import ItemCard from '../components/ItemCard'
+import { itemKey } from '../lib/router'
 
 export default function Board() {
   const { items, activeSprint, canEdit, fail, toast, loadItems } = useApp()
@@ -33,18 +34,17 @@ export default function Board() {
   async function confirmCancel(reason) {
     const { error } = await updateItem(pendingCancel.id, { status: 'cancelada', cancel_reason: reason })
     if (error) return fail(error)
-    toast(`#${pendingCancel.id} cancelado`); setPendingCancel(null); loadItems()
+    toast(`${itemKey(pendingCancel.id)} cancelado`); setPendingCancel(null); loadItems()
   }
 
   return (
     <div>
-      <div className="view-head">
-        <h2>Tablero</h2>
+      <PageHeader title="Tablero">
         <label className="check"><input type="checkbox" checked={hideEpics} onChange={e => setHideEpics(e.target.checked)} /> Ocultar épicas</label>
         <label className="check"><input type="checkbox" checked={showCancelled} onChange={e => setShowCancelled(e.target.checked)} /> Mostrar canceladas</label>
-      </div>
+      </PageHeader>
       <FilterBar filters={filters} setFilters={setFilters} hide={['status']} />
-      {!activeSprint && <p className="muted small">No hay sprint activo. Inicia uno en la vista Sprints o elige un filtro.</p>}
+      {!activeSprint && <p className="hint">No hay sprint activo. Inicia uno en la vista Sprints o elige un filtro.</p>}
 
       <div className="board">
         {columns.map(status => {
@@ -59,9 +59,9 @@ export default function Board() {
               onDragLeave={() => setDragOver(null)}
               onDrop={canEdit ? (e => drop(status, e)) : undefined}
             >
-              <header style={{ borderTopColor: STATUSES[status].color }}>
-                <span>{STATUSES[status].label}</span>
-                <span className="muted small">{col.length}{pts ? ` · ${pts} pts` : ''}</span>
+              <header>
+                <span className="column-title"><StatusDot status={status} />{STATUSES[status].label}</span>
+                <span className="column-count">{col.length}{pts ? ` · ${pts} pts` : ''}</span>
               </header>
               <div className="column-body">
                 {col.map(i => <ItemCard key={i.id} item={i} draggable={canEdit} />)}
@@ -73,7 +73,7 @@ export default function Board() {
 
       {pendingCancel && (
         <ReasonDialog
-          title={`Cancelar #${pendingCancel.id}`}
+          title={`Cancelar ${itemKey(pendingCancel.id)}`}
           description={pendingCancel.title}
           confirmLabel="Cancelar ítem"
           onConfirm={confirmCancel}

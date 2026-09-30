@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase, isConfigured } from './lib/supabase'
 import { AppProvider, useApp } from './lib/store'
 import Login, { SetPassword } from './components/Login'
-import ItemModal from './components/ItemModal'
+import ItemModal, { ItemPage } from './components/ItemModal'
+import { useRoute, Link } from './lib/router'
 import Board from './views/Board'
 import ListView from './views/ListView'
 import Hierarchy from './views/Hierarchy'
@@ -10,6 +11,8 @@ import MyTasks from './views/MyTasks'
 import Sprints from './views/Sprints'
 import History from './views/History'
 import Team from './views/Team'
+import { ThemeToggle } from './components/ui'
+import { PlusIcon } from './components/icons'
 
 const VIEWS = [
   { key: 'tablero',    label: 'Tablero',    comp: Board },
@@ -40,7 +43,7 @@ export default function App() {
     return (
       <div className="center-screen">
         <div className="card narrow">
-          <h2>Falta configuración</h2>
+          <h1 className="card-title-lg">Falta configuración</h1>
           <p>Crea el archivo <code>.env</code> con <code>VITE_SUPABASE_URL</code> y <code>VITE_SUPABASE_ANON_KEY</code> (ver README).</p>
         </div>
       </div>
@@ -63,45 +66,57 @@ export default function App() {
 }
 
 function Shell() {
-  const { me, session, canEdit, onSignOut, loading, openItem, setOpenItem, toasts } = useApp()
-  const [view, setView] = useState(() => location.hash.slice(1) || 'tablero')
-
-  useEffect(() => {
-    const onHash = () => setView(location.hash.slice(1) || 'tablero')
-    addEventListener('hashchange', onHash)
-    return () => removeEventListener('hashchange', onHash)
-  }, [])
+  const { me, session, canEdit, onSignOut, loading, openItem, setOpenItem, toasts, dismissToast, activeSprint } = useApp()
+  const route = useRoute()   // { itemId } en /browse/TT-12, o { view } en /#tablero
+  const view = route.itemId ? null : route.view
 
   const Current = (VIEWS.find(v => v.key === view) ?? VIEWS[0]).comp
 
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">TeamTrack</div>
-        <nav>
-          {VIEWS.map(v => (
-            <a key={v.key} href={'#' + v.key} className={view === v.key ? 'active' : ''}>{v.label}</a>
-          ))}
-        </nav>
-        <div className="user">
-          {canEdit && (
-            <button className="btn primary sm" onClick={() => setOpenItem({ new: true })}>+ Nuevo</button>
-          )}
-          <span className="who">
-            {session ? (me ? me.full_name : 'Sin acceso de edición') : 'Visitante (solo lectura)'}
-          </span>
-          <button className="btn ghost sm" onClick={onSignOut}>{session ? 'Salir' : 'Iniciar sesión'}</button>
+        <div className="topbar-inner">
+          <Link className="brand" to="/#tablero"><span className="brand-mark" aria-hidden="true" />TeamTrack</Link>
+          <nav aria-label="Secciones">
+            {VIEWS.map(v => (
+              <Link key={v.key} to={'/#' + v.key} className={view === v.key ? 'active' : ''}
+                    aria-current={view === v.key ? 'page' : undefined}>{v.label}</Link>
+            ))}
+          </nav>
+          <div className="user">
+            {canEdit && (
+              <button className="btn primary sm" onClick={() => setOpenItem({
+                new: true,
+                // Desde el tablero, lo nuevo entra al sprint activo para que se vea de inmediato
+                defaults: activeSprint && ['tablero', 'mis-tareas'].includes(view) ? { sprint_id: activeSprint.id } : undefined,
+              })}>
+                <PlusIcon /><span>Nuevo</span>
+              </button>
+            )}
+            <span className="who">
+              {session ? (me ? me.full_name : 'Sin acceso de edición') : 'Visitante (solo lectura)'}
+            </span>
+            <ThemeToggle />
+            <button className="btn ghost sm" onClick={onSignOut}>{session ? 'Salir' : 'Iniciar sesión'}</button>
+          </div>
         </div>
       </header>
 
       <main className="content">
-        {loading ? <p className="muted">Cargando datos…</p> : <Current />}
+        {loading ? <p className="muted">Cargando datos…</p> : route.itemId ? <ItemPage id={route.itemId} /> : <Current />}
       </main>
 
       {openItem && <ItemModal key={openItem.id ?? 'new'} target={openItem} onClose={() => setOpenItem(null)} />}
 
-      <div className="toasts">
-        {toasts.map(t => <div key={t.id} className={'toast ' + t.kind}>{t.text}</div>)}
+      <div className="toasts" role="status" aria-live="polite">
+        {toasts.map(t => (
+          <div key={t.id} className={'toast ' + t.kind}>
+            <span>{t.text}</span>
+            {t.action && (
+              <button className="toast-action" onClick={() => { t.action.onClick(); dismissToast(t.id) }}>{t.action.label}</button>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   )

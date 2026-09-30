@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { OPEN_STATUSES } from '../lib/constants'
-import { Avatar } from '../components/ui'
+import { Avatar, PageHeader } from '../components/ui'
+import { CloseIcon } from '../components/icons'
 
 export default function Team() {
   const { members, items, me, canEdit, session, fail, toast, loadMembers } = useApp()
@@ -36,7 +37,7 @@ export default function Team() {
 
   return (
     <div>
-      <div className="view-head"><h2>Equipo</h2><span className="muted small">Todos los miembros tienen el mismo rol</span></div>
+      <PageHeader title="Equipo" subtitle="Todos los miembros tienen el mismo rol" />
 
       <div className="team-grid">
         {members.map(m => {
@@ -51,25 +52,25 @@ export default function Team() {
                     <input value={editing.value} autoFocus
                            onChange={e => setEditing({ id: m.id, value: e.target.value })}
                            onKeyDown={e => { if (e.key === 'Enter') rename(m); if (e.key === 'Escape') setEditing(null) }} />
-                    <button className="btn primary xs" onClick={() => rename(m)}>OK</button>
-                    <button className="btn ghost xs" onClick={() => setEditing(null)}>✕</button>
+                    <button className="btn primary sm" onClick={() => rename(m)}>OK</button>
+                    <button className="btn ghost icon sm" onClick={() => setEditing(null)} aria-label="Cancelar"><CloseIcon /></button>
                   </div>
                 ) : (
                   <div className="member-name">{m.full_name}{m.id === me?.id && ' (yo)'}</div>
                 )}
-                {session && <div className="muted small">{m.email}</div>}
-                <div className="small">
+                {session && <div className="member-email">{m.email}</div>}
+                <div className="member-status">
                   {m.active ? <span className="ok-text">Activo</span> : <span className="muted">Inactivo</span>}
-                  {' · '}{m.user_id ? 'Cuenta creada' : <span className="warn-text">Sin cuenta aún</span>}
+                  <span className="sep">·</span>{m.user_id ? 'Cuenta creada' : <span className="warn-text">Sin cuenta aún</span>}
                 </div>
-                <div className="small muted">{open.length} abiertas · {pts} pts</div>
+                <div className="member-load">{open.length} abiertas · {pts} pts</div>
               </div>
               {canEdit && (
                 <div className="member-actions">
-                  <button className="btn ghost xs" onClick={() => setEditing({ id: m.id, value: m.full_name })}>Renombrar</button>
+                  <button className="btn ghost sm" onClick={() => setEditing({ id: m.id, value: m.full_name })}>Renombrar</button>
                   {m.active
-                    ? <button className="btn danger-ghost xs" onClick={() => setActive(m, false)}>Quitar</button>
-                    : <button className="btn ghost xs" onClick={() => setActive(m, true)}>Reactivar</button>}
+                    ? <button className="btn danger-ghost sm" onClick={() => setActive(m, false)}>Quitar</button>
+                    : <button className="btn ghost sm" onClick={() => setActive(m, true)}>Reactivar</button>}
                 </div>
               )}
             </div>
@@ -78,12 +79,14 @@ export default function Team() {
       </div>
 
       {canEdit && (
-        <form className="card pad add-member" onSubmit={add}>
-          <h4>Agregar integrante</h4>
-          <input required placeholder="Nombre completo" value={name} onChange={e => setName(e.target.value)} />
-          <input required type="email" placeholder="correo@empresa.com" value={email} onChange={e => setEmail(e.target.value)} />
-          <button className="btn primary">Agregar</button>
-          <p className="muted small">Después, la persona entra a la app, elige "Primera vez (crear contraseña)" con ese mismo correo.</p>
+        <form className="card add-member" onSubmit={add}>
+          <h2 className="section-title">Agregar integrante</h2>
+          <div className="add-member-fields">
+            <input required placeholder="Nombre completo" aria-label="Nombre completo" value={name} onChange={e => setName(e.target.value)} />
+            <input required type="email" placeholder="correo@empresa.com" aria-label="Correo" value={email} onChange={e => setEmail(e.target.value)} />
+            <button className="btn primary">Agregar</button>
+          </div>
+          <p className="hint">Después, la persona entra a la app, elige "Primera vez (crear contraseña)" con ese mismo correo.</p>
         </form>
       )}
     </div>

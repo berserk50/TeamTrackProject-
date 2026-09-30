@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase, errorText } from '../lib/supabase'
+import { ThemeToggle } from './ui'
 
 export default function Login({ onVisitor }) {
   const [mode, setMode] = useState('login') // login | signup | reset
@@ -30,8 +31,9 @@ export default function Login({ onVisitor }) {
 
   return (
     <div className="center-screen">
+      <div className="corner"><ThemeToggle /></div>
       <form className="card narrow" onSubmit={submit}>
-        <h1 className="brand big">TeamTrack</h1>
+        <div className="brand big"><span className="brand-mark" aria-hidden="true" />TeamTrack</div>
         <p className="muted">
           {mode === 'login' && 'Inicia sesión con tu cuenta del equipo.'}
           {mode === 'signup' && 'Crea tu contraseña. Solo funciona con correos registrados en el equipo.'}
@@ -75,8 +77,9 @@ export function SetPassword({ onDone }) {
 
   return (
     <div className="center-screen">
+      <div className="corner"><ThemeToggle /></div>
       <form className="card narrow" onSubmit={submit}>
-        <h2>Nueva contraseña</h2>
+        <h1 className="card-title-lg">Nueva contraseña</h1>
         <label>Contraseña
           <input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} autoFocus />
         </label>

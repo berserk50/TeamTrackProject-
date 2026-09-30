@@ -1,27 +1,29 @@
+// Los colores de tipos, estados y prioridades viven en styles.css (clases por clave)
+import { itemKey } from './router'
 export const TYPES = {
-  epica:    { label: 'Épica',          short: 'EP', color: '#7c3aed' },
-  historia: { label: 'Historia',       short: 'HU', color: '#2563eb' },
-  tarea:    { label: 'Tarea',          short: 'TK', color: '#0d9488' },
-  bug:      { label: 'Bug',            short: 'BG', color: '#dc2626' },
+  epica:    { label: 'Épica', short: 'EP' },
+  historia: { label: 'Historia', short: 'HU' },
+  tarea:    { label: 'Tarea', short: 'TK' },
+  bug:      { label: 'Bug', short: 'BG' },
 }
 export const TYPE_KEYS = Object.keys(TYPES)
 
 export const STATUSES = {
-  pendiente:   { label: 'Pendiente',    color: '#64748b' },
-  en_progreso: { label: 'En progreso',  color: '#2563eb' },
-  en_revision: { label: 'En revisión',  color: '#d97706' },
-  qa:          { label: 'QA',           color: '#9333ea' },
-  cerrada:     { label: 'Cerrada',      color: '#16a34a' },
-  cancelada:   { label: 'Cancelada',    color: '#9ca3af' },
+  pendiente:   { label: 'Pendiente' },
+  en_progreso: { label: 'En progreso' },
+  en_revision: { label: 'En revisión' },
+  qa:          { label: 'QA' },
+  cerrada:     { label: 'Cerrada' },
+  cancelada:   { label: 'Cancelada' },
 }
 export const STATUS_KEYS = Object.keys(STATUSES)
 export const OPEN_STATUSES = ['pendiente', 'en_progreso', 'en_revision', 'qa']
 
 export const PRIORITIES = {
-  critica: { label: 'Crítica', color: '#dc2626', rank: 0 },
-  alta:    { label: 'Alta',    color: '#ea580c', rank: 1 },
-  media:   { label: 'Media',   color: '#ca8a04', rank: 2 },
-  baja:    { label: 'Baja',    color: '#64748b', rank: 3 },
+  critica: { label: 'Crítica', rank: 0 },
+  alta:    { label: 'Alta', rank: 1 },
+  media:   { label: 'Media', rank: 2 },
+  baja:    { label: 'Baja', rank: 3 },
 }
 export const PRIORITY_KEYS = Object.keys(PRIORITIES)
 
@@ -47,7 +49,7 @@ export const ALLOWED_PARENTS = {
 }
 
 export function itemLabel(item) {
-  return item ? `#${item.id} ${item.title}` : ''
+  return item ? `${itemKey(item.id)} ${item.title}` : ''
 }
 
 export function fmtDate(value) {
@@ -61,6 +63,20 @@ export function fmtDateTime(value) {
   return new Date(value).toLocaleString('es-PA', {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
+}
+
+export function fmtTime(value) {
+  return new Date(value).toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit' })
+}
+
+// "Hoy", "Ayer" o la fecha completa, para agrupar actividad por día
+export function dayLabel(value) {
+  const d = new Date(value), today = new Date()
+  const days = Math.round((new Date(today.toDateString()) - new Date(d.toDateString())) / 864e5)
+  const date = d.toLocaleDateString('es-PA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  if (days === 0) return 'Hoy · ' + date
+  if (days === 1) return 'Ayer · ' + date
+  return date[0].toUpperCase() + date.slice(1)
 }
 
 export function isOverdue(item) {

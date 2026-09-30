@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../lib/store'
 import HistoryList from '../components/HistoryList'
+import { PageHeader } from '../components/ui'
 
 const ACTIONS = ['creado', 'modificado', 'cancelado', 'reabierto', 'comentario', 'adjunto', 'adjunto eliminado', 'eliminado']
 
@@ -11,12 +12,9 @@ export default function History() {
 
   return (
     <div>
-      <div className="view-head">
-        <h2>Historial de cambios</h2>
-        <span className="muted small">Registro automático e inalterable de todo lo que pasa en el proyecto</span>
-      </div>
+      <PageHeader title="Historial de cambios" subtitle="Registro automático e inalterable de todo lo que pasa en el proyecto" />
       <div className="filters">
-        <input placeholder="Buscar por #id o título…" value={f.q} onChange={set('q')} />
+        <input type="search" className="search" placeholder="Buscar por #id o título…" value={f.q} onChange={set('q')} />
         <select value={f.actor} onChange={set('actor')}>
           <option value="">Todas las personas</option>
           {members.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}

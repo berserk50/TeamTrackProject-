@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { PRIORITIES, STATUS_KEYS, fmtDate, isOverdue } from '../lib/constants'
-import { FilterBar, applyFilters, EMPTY_FILTERS, TypeBadge, StatusBadge, PriorityBadge, Avatar } from '../components/ui'
+import { FilterBar, applyFilters, EMPTY_FILTERS, TypeBadge, StatusBadge, PriorityBadge, Assignee, PageHeader } from '../components/ui'
+import { ArrowUpIcon, ArrowDownIcon } from '../components/icons'
+import { Link, itemKey, itemPath } from '../lib/router'
 
 const SORTS = {
   id:       (a, b) => a.id - b.id,
@@ -24,7 +26,7 @@ export default function ListView() {
 
   const th = (key, label) => (
     <th className="sortable" onClick={() => setSort({ key, dir: sort.key === key ? -sort.dir : 1 })}>
-      {label}{sort.key === key ? (sort.dir > 0 ? ' ▲' : ' ▼') : ''}
+      <span className="th-sort">{label}{sort.key === key && (sort.dir > 0 ? <ArrowUpIcon size={12} /> : <ArrowDownIcon size={12} />)}</span>
     </th>
   )
 
@@ -41,15 +43,12 @@ export default function ListView() {
 
   return (
     <div>
-      <div className="view-head">
-        <h2>Backlog</h2>
-        <span className="muted">{rows.length} ítems · {totalPts} pts</span>
-      </div>
+      <PageHeader title="Backlog" subtitle={`${rows.length} ítems · ${totalPts} pts`} />
       <FilterBar filters={filters} setFilters={setFilters} />
 
       {canEdit && selected.size > 0 && (
         <div className="bulkbar">
-          <b>{selected.size} seleccionados</b>
+          <span className="bulk-count">{selected.size} seleccionados</span>
           <select value="" onChange={e => bulk({ sprint_id: e.target.value === 'backlog' ? null : Number(e.target.value) })}>
             <option value="" disabled>Mover a sprint…</option>
             <option value="backlog">Backlog (sin sprint)</option>
@@ -73,27 +72,27 @@ export default function ListView() {
                   checked={rows.length > 0 && rows.every(r => selected.has(r.id))}
                   onChange={e => setSelected(e.target.checked ? new Set(rows.map(r => r.id)) : new Set())} /></th>
               )}
-              {th('id', '#')}<th>Tipo</th>{th('title', 'Título')}{th('status', 'Estado')}{th('priority', 'Prioridad')}
-              <th>Asignado</th><th>Sprint</th>{th('points', 'Pts')}{th('due', 'Fecha límite')}<th>Padre</th>
+              {th('id', 'Clave')}<th>Tipo</th>{th('title', 'Título')}{th('status', 'Estado')}{th('priority', 'Prioridad')}
+              <th>Asignado</th><th className="col-sprint">Sprint</th>{th('points', 'Pts')}{th('due', 'Fecha límite')}<th className="col-parent">Padre</th>
             </tr>
           </thead>
           <tbody>
             {rows.map(i => (
               <tr key={i.id} onClick={() => setOpenItem({ id: i.id })} className={i.status === 'cancelada' ? 'dim' : ''}>
                 {canEdit && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(i.id)} onChange={() => toggle(i.id)} /></td>}
-                <td className="muted">{i.id}</td>
+                <td className="nowrap"><Link className="key-link" to={itemPath(i.id)} onClick={e => e.stopPropagation()}>{itemKey(i.id)}</Link></td>
                 <td><TypeBadge type={i.type} /></td>
                 <td className="title-cell">{i.title}{i.tags.map(t => <span key={t} className="tag">{t}</span>)}</td>
                 <td><StatusBadge status={i.status} /></td>
                 <td><PriorityBadge priority={i.priority} /></td>
-                <td><span className="assignee"><Avatar member={membersById[i.assignee_id]} size={22} /> {membersById[i.assignee_id]?.full_name ?? ''}</span></td>
-                <td className="small">{sprintsById[i.sprint_id]?.name ?? <span className="muted">Backlog</span>}</td>
-                <td>{i.story_points != null ? Number(i.story_points) : ''}</td>
-                <td className={isOverdue(i) ? 'overdue' : ''}>{fmtDate(i.due_date)}</td>
-                <td className="small muted">{itemsById[i.parent_id] ? `#${i.parent_id} ${itemsById[i.parent_id].title}` : ''}</td>
+                <td><Assignee member={membersById[i.assignee_id]} /></td>
+                <td className="small col-sprint">{sprintsById[i.sprint_id]?.name ?? <span className="muted">Backlog</span>}</td>
+                <td className="num">{i.story_points != null ? Number(i.story_points) : ''}</td>
+                <td className={'nowrap' + (isOverdue(i) ? ' overdue' : '')}>{fmtDate(i.due_date)}</td>
+                <td className="small muted col-parent">{itemsById[i.parent_id] ? `${itemKey(i.parent_id)} ${itemsById[i.parent_id].title}` : ''}</td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={11} className="muted center">No hay ítems con estos filtros.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={11} className="empty-row">No hay ítems con estos filtros.</td></tr>}
           </tbody>
         </table>
       </div>

@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { STATUSES, STATUS_KEYS, OPEN_STATUSES, SPRINT_STATUSES, fmtDate } from '../lib/constants'
-import { Modal, TypeBadge, StatusBadge, Avatar } from '../components/ui'
+import { Modal, TypeBadge, StatusBadge, StatusDot, Assignee, Progress, PageHeader } from '../components/ui'
+import { ChevronIcon, PlusIcon } from '../components/icons'
+import { itemKey } from '../lib/router'
 
 export default function Sprints() {
   const { sprints, items, canEdit, activeSprint, membersById, setOpenItem, fail, toast, loadSprints, loadItems } = useApp()
@@ -24,11 +26,10 @@ export default function Sprints() {
 
   return (
     <div>
-      <div className="view-head">
-        <h2>Sprints</h2>
-        {canEdit && <button className="btn primary sm" onClick={() => setEditing({})}>+ Nuevo sprint</button>}
-      </div>
-      {sprints.length === 0 && <p className="muted">Aún no hay sprints.</p>}
+      <PageHeader title="Sprints">
+        {canEdit && <button className="btn primary sm" onClick={() => setEditing({})}><PlusIcon /><span>Nuevo sprint</span></button>}
+      </PageHeader>
+      {sprints.length === 0 && <p className="empty-state card">Aún no hay sprints.</p>}
 
       <div className="sprint-list">
         {sprints.map(s => {
@@ -42,13 +43,16 @@ export default function Sprints() {
             <div key={s.id} className={'card sprint ' + s.status}>
               <div className="sprint-head" onClick={() => setExpanded(open ? null : s.id)}>
                 <div className="grow">
-                  <div className="sprint-name">{s.name} <span className={'pill ' + s.status}>{SPRINT_STATUSES[s.status]}</span></div>
-                  <div className="muted small">{fmtDate(s.start_date)} → {fmtDate(s.end_date)}{s.goal && ` · Objetivo: ${s.goal}`}</div>
+                  <div className="sprint-name">
+                    <ChevronIcon size={14} className={'icon chevron' + (open ? ' open' : '')} />
+                    {s.name} <span className={'pill ' + s.status}>{SPRINT_STATUSES[s.status]}</span>
+                  </div>
+                  <div className="sprint-dates">{fmtDate(s.start_date)} → {fmtDate(s.end_date)}{s.goal && ` · Objetivo: ${s.goal}`}</div>
                 </div>
                 <div className="sprint-stats">
                   <span>{valid.length} ítems</span>
                   <span>{done}/{total} pts</span>
-                  <span className="progress wide"><span style={{ width: pct + '%' }} /><em>{pct}%</em></span>
+                  <Progress value={pct} wide />
                 </div>
                 {canEdit && (
                   <div className="sprint-actions" onClick={e => e.stopPropagation()}>
@@ -64,16 +68,16 @@ export default function Sprints() {
                   <div className="status-counts">
                     {STATUS_KEYS.map(k => {
                       const n = its.filter(i => i.status === k).length
-                      return n ? <span key={k} style={{ color: STATUSES[k].color }}>{STATUSES[k].label}: {n}</span> : null
+                      return n ? <span key={k}><StatusDot status={k} />{STATUSES[k].label}: {n}</span> : null
                     })}
                   </div>
                   {its.length === 0 && <p className="muted">Sin ítems. Muévelos desde la vista Backlog.</p>}
                   <ul className="child-list">
                     {its.sort((a, b) => STATUS_KEYS.indexOf(a.status) - STATUS_KEYS.indexOf(b.status)).map(i => (
                       <li key={i.id} onClick={() => setOpenItem({ id: i.id })}>
-                        <TypeBadge type={i.type} /><span className="grow">#{i.id} {i.title}</span>
+                        <TypeBadge type={i.type} /><span className="grow">{itemKey(i.id)} {i.title}</span>
                         {i.story_points != null && <span className="pts">{Number(i.story_points)} pts</span>}
-                        <StatusBadge status={i.status} /><Avatar member={membersById[i.assignee_id]} size={22} />
+                        <StatusBadge status={i.status} /><Assignee member={membersById[i.assignee_id]} short />
                       </li>
                     ))}
                   </ul>
@@ -154,7 +158,7 @@ function CloseSprint({ sprint, onClose }) {
     <Modal title={`Cerrar ${sprint.name}`} onClose={onClose}>
       <div className="modal-body">
         {unfinished.length === 0
-          ? <p>Todos los ítems del sprint están terminados. 🎉</p>
+          ? <p>Todos los ítems del sprint están terminados.</p>
           : (
             <>
               <p>Hay <b>{unfinished.length}</b> ítem(s) sin terminar. ¿A dónde los movemos?</p>
