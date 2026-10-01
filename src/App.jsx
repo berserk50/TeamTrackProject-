@@ -12,6 +12,7 @@ import Sprints from './views/Sprints'
 import History from './views/History'
 import Team from './views/Team'
 import { ThemeToggle } from './components/ui'
+import NotificationBell from './components/Notifications'
 import { PlusIcon } from './components/icons'
 
 const VIEWS = [
@@ -93,6 +94,7 @@ function Shell() {
                 <PlusIcon /><span>Nuevo</span>
               </button>
             )}
+            {canEdit && <NotificationBell />}
             <span className="who">
               {session ? (me ? me.full_name : 'Sin acceso de edición') : 'Visitante (solo lectura)'}
             </span>

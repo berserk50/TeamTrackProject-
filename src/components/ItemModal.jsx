@@ -8,7 +8,7 @@ import {
 import { Modal, ReasonDialog, TypeBadge, StatusBadge, Avatar, Assignee, PriorityBadge, RichText } from './ui'
 import HistoryList from './HistoryList'
 import { Link, navigate, itemKey, itemPath } from '../lib/router'
-import { RepoIcon, BranchIcon, ExternalIcon, FileIcon, PlusIcon, LinkIcon, EditIcon, ChevronIcon } from './icons'
+import { RepoIcon, BranchIcon, ExternalIcon, FileIcon, PlusIcon, LinkIcon, EditIcon, ChevronIcon, EyeIcon } from './icons'
 
 const FIELDS = [
   'type', 'title', 'description', 'acceptance_criteria', 'status', 'priority', 'severity',
@@ -141,6 +141,7 @@ export function ItemPage({ id }) {
         </div>
         <div className="item-page-actions">
           {canEdit && !editing && <button className="btn sm" onClick={() => setEditing(true)}><EditIcon />Editar</button>}
+          <WatchButton item={item} />
           <button className="btn ghost sm" onClick={copyLink}><LinkIcon />{copied ? 'Enlace copiado' : 'Copiar enlace'}</button>
           {canEdit && (item.status !== 'cancelada'
             ? <button className="btn ghost sm" onClick={() => setDialog('cancel')}>Cancelar ítem</button>
@@ -175,6 +176,52 @@ export function ItemPage({ id }) {
         />
       )}
     </div>
+  )
+}
+
+/* ------------------------------ Seguir ------------------------------ */
+
+// Botón "Seguir" (como Watch en Jira). Responsable y creador reciben avisos aunque no sigan el ítem.
+function WatchButton({ item }) {
+  const { me, canEdit, membersById, fail } = useApp()
+  const [watchers, setWatchers] = useState(null) // null = sin cargar o sin la migración
+  const [busy, setBusy] = useState(false)
+
+  async function load() {
+    const { data, error } = await supabase.from('item_watchers').select('member_id').eq('item_id', item.id)
+    setWatchers(error ? null : data.map(w => w.member_id))
+  }
+  useEffect(() => { load() }, [item.id])
+  useEffect(() => {
+    const ch = supabase.channel('watchers-' + item.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'item_watchers', filter: `item_id=eq.${item.id}` }, load)
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [item.id])
+
+  if (!watchers) return null
+
+  const watching = Boolean(me && watchers.includes(me.id))
+  const implicit = me && (item.assignee_id === me.id || item.created_by === me.id)
+  const names = watchers.map(id => membersById[id]?.full_name).filter(Boolean)
+  const title = (names.length ? 'Siguen este ítem: ' + names.join(', ') : 'Nadie sigue este ítem') +
+    (implicit && !watching ? '\nYa recibes avisos por ser ' + (item.assignee_id === me.id ? 'responsable' : 'creador') : '')
+
+  async function toggle() {
+    setBusy(true)
+    const { error } = watching
+      ? await supabase.from('item_watchers').delete().eq('item_id', item.id).eq('member_id', me.id)
+      : await supabase.from('item_watchers').insert({ item_id: item.id, member_id: me.id })
+    setBusy(false)
+    if (error) return fail(error)
+    load()
+  }
+
+  return (
+    <button type="button" className={'btn ghost sm' + (watching ? ' pressed' : '')} title={title}
+            onClick={toggle} disabled={!canEdit || busy} aria-pressed={watching}>
+      <EyeIcon />{watching ? 'Siguiendo' : 'Seguir'}{watchers.length > 0 && <span className="watch-count">{watchers.length}</span>}
+    </button>
   )
 }
 
@@ -561,12 +608,14 @@ function useComments(itemId) {
   return { list, reload }
 }
 
-// Inserta un comentario; valida que los enlaces de commit/PR sean URLs
-async function postComment(itemId, fields, fail) {
+// Inserta un comentario; valida que los enlaces de commit/PR sean URLs.
+// mentions: ids de los miembros etiquetados con @ (solo se envía si hay alguno)
+async function postComment(itemId, fields, fail, mentions = []) {
   const row = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v.trim() || null]))
   for (const k of ['commit_url', 'pr_url']) {
     if (row[k] && !/^https?:\/\//i.test(row[k])) { fail({ message: 'Los enlaces de commit y PR deben empezar con https://' }); return false }
   }
+  if (mentions.length) row.mentions = mentions
   const { error } = await supabase.from('comments').insert({ ...row, item_id: itemId })
   if (error) { fail(error); return false }
   return true
@@ -672,21 +721,62 @@ function DevPanel({ item, comments }) {
 
 const EMPTY_COMMENT = { body: '', repository: '', branch: '', commit_url: '', pr_url: '' }
 
+// Sin mayúsculas ni tildes, para buscar "jose" y encontrar "José"
+const fold = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
 function Comments({ item, comments }) {
-  const { me, membersById, canEdit, fail } = useApp()
+  const { me, membersById, activeMembers, canEdit, fail } = useApp()
   const [c, setC] = useState(EMPTY_COMMENT)
   const [showGit, setShowGit] = useState(false)
   const [busy, setBusy] = useState(false)
   const [docs, setDocs] = useState(null) // adjuntos para citar; se cargan al pedirlos
+  const [mention, setMention] = useState(null) // { query, start } mientras se escribe "@algo"
+  const [pick, setPick] = useState(0)
   const bodyRef = useRef(null)
   const list = comments.list
 
   const hasContent = Object.values(c).some(v => v.trim())
 
+  const candidates = mention
+    ? activeMembers.filter(m => m.id !== me?.id && fold(m.full_name).split(/\s+/).some(w => w.startsWith(fold(mention.query)))).slice(0, 6)
+    : []
+
+  // Detecta "@texto" justo antes del cursor
+  function onBody(e) {
+    setC({ ...c, body: e.target.value })
+    const before = e.target.value.slice(0, e.target.selectionStart)
+    const m = before.match(/(?:^|\s)@([^\s@]{0,30})$/)
+    setMention(m ? { query: m[1], start: before.length - m[1].length - 1 } : null)
+    setPick(0)
+  }
+
+  function insertMention(m) {
+    const el = bodyRef.current
+    const end = el ? el.selectionStart : c.body.length
+    const text = '@' + m.full_name + ' '
+    const body = c.body.slice(0, mention.start) + text + c.body.slice(end)
+    setC({ ...c, body }); setMention(null)
+    requestAnimationFrame(() => { el?.focus(); el?.setSelectionRange(mention.start + text.length, mention.start + text.length) })
+  }
+
+  function onBodyKey(e) {
+    if (!candidates.length) return
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      setPick((pick + (e.key === 'ArrowDown' ? 1 : -1) + candidates.length) % candidates.length)
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault(); insertMention(candidates[pick])
+    } else if (e.key === 'Escape') {
+      e.preventDefault(); setMention(null)
+    }
+  }
+
   async function post(e) {
     e.preventDefault()
     setBusy(true)
-    const ok = await postComment(item.id, c, fail)
+    // Etiquetados: los "@Nombre completo" que siguen en el texto al enviar
+    const mentions = activeMembers.filter(m => c.body.includes('@' + m.full_name)).map(m => m.id)
+    const ok = await postComment(item.id, c, fail, mentions)
     setBusy(false)
     if (!ok) return
     setC(EMPTY_COMMENT); setShowGit(false); setDocs(null); comments.reload()
@@ -717,7 +807,19 @@ function Comments({ item, comments }) {
         <form className="comment-form" onSubmit={post}>
           <Avatar member={me} size={30} />
           <div className="grow">
-            <textarea ref={bodyRef} rows={2} placeholder="Escribe un comentario… Puedes pegar enlaces o mencionar ítems como TT-12" value={c.body} onChange={set('body')} />
+            <textarea ref={bodyRef} rows={2} placeholder="Escribe un comentario… Etiqueta personas con @ o menciona ítems como TT-12"
+                      value={c.body} onChange={onBody} onKeyDown={onBodyKey} onBlur={() => setTimeout(() => setMention(null), 150)} />
+            {candidates.length > 0 && (
+              <div className="doc-picker mention-picker" role="listbox" aria-label="Mencionar a">
+                {candidates.map((m, i) => (
+                  <button key={m.id} type="button" role="option" aria-selected={i === pick}
+                          className={'doc-option' + (i === pick ? ' active' : '')}
+                          onMouseDown={e => e.preventDefault()} onClick={() => insertMention(m)}>
+                    <Avatar member={m} size={22} /><span>{m.full_name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             {docs && (
               <div className="doc-picker">
                 {docs.length === 0
@@ -760,7 +862,7 @@ function Comments({ item, comments }) {
                     <b>{membersById[cm.author_id]?.full_name ?? 'Ex miembro'}</b>
                     <span className="muted" title={fmtDateTime(cm.created_at)}>{fmtTime(cm.created_at)}</span>
                   </div>
-                  {cm.body && <RichText className="pre" text={cm.body} />}
+                  {cm.body && <RichText className="pre" text={cm.body} mentions={cm.mentions?.map(id => membersById[id]?.full_name).filter(Boolean)} />}
                   {(cm.repository || cm.branch || cm.commit_url || cm.pr_url) && (
                     <div className="git-chips">
                       {cm.repository && <span className="chip"><RepoIcon size={13} />{cm.repository}</span>}

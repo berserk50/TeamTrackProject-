@@ -27,3 +27,5 @@ export const SunIcon = (p) => (
 export const MoonIcon = (p) => <Svg {...p}><path d="M13.5 9.5A5.5 5.5 0 016.5 2.5a5.5 5.5 0 107 7z" /></Svg>
 export const LinkIcon = (p) => <Svg {...p}><path d="M6.5 9.5a3 3 0 004.2 0l2-2a3 3 0 00-4.2-4.2l-.8.8M9.5 6.5a3 3 0 00-4.2 0l-2 2a3 3 0 004.2 4.2l.8-.8" /></Svg>
 export const EditIcon = (p) => <Svg {...p}><path d="M10.5 2.5l3 3L6 13H3v-3l7.5-7.5z" /></Svg>
+export const BellIcon = (p) => <Svg {...p}><path d="M4 11.5V7a4 4 0 018 0v4.5l1 1H3l1-1zM6.5 13.5a1.5 1.5 0 003 0" /></Svg>
+export const EyeIcon = (p) => <Svg {...p}><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z" /><circle cx="8" cy="8" r="2" /></Svg>

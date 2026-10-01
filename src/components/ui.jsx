@@ -39,18 +39,32 @@ export function Avatar({ member, size = 26 }) {
 
 // Texto con enlaces: [texto](https://…), URLs sueltas y claves de ítem (TT-12)
 const RICH = new RegExp(String.raw`\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<]+[^\s<.,;:!?)\]'"])|\b(${ITEM_PREFIX}-(\d+))\b`, 'g')
-export function RichText({ text, className }) {
+// mentions: nombres de los miembros mencionados; su "@Nombre" se resalta
+export function RichText({ text, className, mentions }) {
   const out = []
   let last = 0
+  const MENTION = mentions?.length
+    ? new RegExp('@(' + mentions.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'g')
+    : null
+  const plain = (s, at) => {
+    if (!MENTION) return out.push(s)
+    let i = 0
+    for (const m of s.matchAll(MENTION)) {
+      if (m.index > i) out.push(s.slice(i, m.index))
+      out.push(<span key={'m' + (at + m.index)} className="mention">{m[0]}</span>)
+      i = m.index + m[0].length
+    }
+    if (i < s.length) out.push(s.slice(i))
+  }
   for (const m of text.matchAll(RICH)) {
-    if (m.index > last) out.push(text.slice(last, m.index))
+    if (m.index > last) plain(text.slice(last, m.index), last)
     const k = m.index
     if (m[1]) out.push(<a key={k} href={m[2]} target="_blank" rel="noreferrer">{m[1]}</a>)
     else if (m[3]) out.push(<a key={k} href={m[3]} target="_blank" rel="noreferrer" className="bare-link">{m[3]}</a>)
     else out.push(<Link key={k} to={itemPath(Number(m[5]))}>{m[4]}</Link>)
     last = k + m[0].length
   }
-  if (last < text.length) out.push(text.slice(last))
+  if (last < text.length) plain(text.slice(last), last)
   return <div className={className}>{out}</div>
 }
 

@@ -138,6 +138,15 @@ Equipo inicial: Edgar Rosario, Kennet Karter, Richard Rodriguez, Vivian Paris y 
 1. Entra a [supabase.com](https://supabase.com) → *New project*.
 2. Abre `supabase/schema.sql` y, **al final del archivo**, cambia los correos `@cambiar.com` por los reales de cada integrante, en minúsculas.
 3. En Supabase ve a *SQL Editor* → *New query*, pega **todo** el archivo y pulsa *Run*.
+4. Después ejecuta igual `supabase/notificaciones.sql` (notificaciones, menciones con @ y botón Seguir).
+
+> **Cargas masivas sin notificaciones:** si ejecutas un script que crea o reasigna muchos ítems (por ejemplo `supabase/tareas_presentacion.sql`), pon esta línea al inicio del script para que no se envíe un aviso por cada tarea:
+>
+> ```sql
+> set teamtrack.sin_avisos = 'on';
+> ```
+>
+> Solo afecta a esa sesión del SQL Editor; la app sigue notificando normalmente.
 
 ### b) Configurar la autenticación
 
@@ -176,6 +185,7 @@ Cada integrante entra por primera vez con **"Primera vez (crear contraseña)"**,
 
 ```
 supabase/schema.sql        Base de datos: tablas, reglas, historial, permisos, storage
+supabase/notificaciones.sql Notificaciones, menciones (@) y seguidores (se ejecuta después de schema.sql)
 src/lib/supabase.js        Cliente de Supabase y mensajes de error
 src/lib/constants.js       Tipos, estados, prioridades, colores y formatos
 src/lib/store.jsx          Estado global, carga de datos y tiempo real
