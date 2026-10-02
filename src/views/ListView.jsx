@@ -15,11 +15,33 @@ const SORTS = {
   due:      (a, b) => (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999'),
 }
 
+// Claves de los hijos directos y cuántos están cerrados (los cancelados no cuentan)
+const MAX_KEYS = 4
+function ChildrenCell({ kids = [] }) {
+  if (!kids.length) return null
+  const valid = kids.filter(k => k.status !== 'cancelada')
+  const done = valid.filter(k => k.status === 'cerrada').length
+  return (
+    <div className="children-cell" title={kids.map(k => `${itemKey(k.id)} ${k.title}`).join('\n')}>
+      <span className="children-count">{done}/{valid.length}</span>
+      {kids.slice(0, MAX_KEYS).map(k => (
+        <Link key={k.id} to={itemPath(k.id)} onClick={e => e.stopPropagation()}
+              className={'child-key' + (['cerrada', 'cancelada'].includes(k.status) ? ' done' : '')}>{itemKey(k.id)}</Link>
+      ))}
+      {kids.length > MAX_KEYS && <span className="muted">+{kids.length - MAX_KEYS}</span>}
+    </div>
+  )
+}
+
 export default function ListView() {
   const { items, membersById, sprintsById, sprints, activeMembers, itemsById, canEdit, setOpenItem, fail, toast, loadItems } = useApp()
   const [filters, setFilters] = useState({ ...EMPTY_FILTERS, status: 'abiertos' })
   const [sort, setSort] = useState({ key: 'priority', dir: 1 })
   const [selected, setSelected] = useState(new Set())
+
+  const childrenOf = {}
+  for (const i of items) if (i.parent_id) (childrenOf[i.parent_id] ??= []).push(i)
+  for (const k in childrenOf) childrenOf[k].sort((a, b) => a.id - b.id)
 
   const rows = applyFilters(items, filters).sort((a, b) => SORTS[sort.key](a, b) * sort.dir || b.id - a.id)
   const totalPts = rows.reduce((s, i) => s + Number(i.story_points ?? 0), 0)
@@ -73,7 +95,7 @@ export default function ListView() {
                   onChange={e => setSelected(e.target.checked ? new Set(rows.map(r => r.id)) : new Set())} /></th>
               )}
               {th('id', 'Clave')}<th>Tipo</th>{th('title', 'Título')}{th('status', 'Estado')}{th('priority', 'Prioridad')}
-              <th>Asignado</th><th className="col-sprint">Sprint</th>{th('points', 'Pts')}{th('due', 'Fecha límite')}<th className="col-parent">Padre</th>
+              <th>Asignado</th><th className="col-sprint">Sprint</th>{th('points', 'Pts')}{th('due', 'Fecha límite')}<th className="col-parent">Padre</th><th className="col-children">Hijos</th>
             </tr>
           </thead>
           <tbody>
@@ -90,9 +112,10 @@ export default function ListView() {
                 <td className="num">{i.story_points != null ? Number(i.story_points) : ''}</td>
                 <td className={'nowrap' + (isOverdue(i) ? ' overdue' : '')}>{fmtDate(i.due_date)}</td>
                 <td className="small muted col-parent">{itemsById[i.parent_id] ? `${itemKey(i.parent_id)} ${itemsById[i.parent_id].title}` : ''}</td>
+                <td className="col-children"><ChildrenCell kids={childrenOf[i.id]} /></td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={11} className="empty-row">No hay ítems con estos filtros.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={12} className="empty-row">No hay ítems con estos filtros.</td></tr>}
           </tbody>
         </table>
       </div>

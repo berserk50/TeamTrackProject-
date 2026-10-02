@@ -415,6 +415,10 @@ label.inline input { width: auto; }
 .table tbody tr { cursor: pointer; }
 .table tbody tr:hover { background: var(--surface-2); }
 .table .num { font-variant-numeric: tabular-nums; }
+.children-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font-size: 12.5px; min-width: 120px; max-width: 220px; }
+.children-count { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-2); }
+.child-key { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.child-key.done { text-decoration: line-through; color: var(--text-3); }
 .table .empty-row { color: var(--text-2); text-align: center; padding: 32px 12px; cursor: default; }
 .title-cell { font-weight: 500; min-width: 240px; }
 .title-cell .tag { margin-left: 6px; }
@@ -483,6 +487,8 @@ button.twisty:hover { background: var(--surface-3); color: var(--text); }
 .child-list li:last-child { border-bottom: 0; }
 .child-list li:hover { background: var(--surface-2); }
 .child-list .grow { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.child-list li.nested { padding-left: 36px; background: color-mix(in srgb, var(--surface-2) 50%, transparent); }
+.child-list li.nested:hover { background: var(--surface-2); }
 
 /* =========================================================================
    Equipo

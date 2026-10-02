@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useApp, updateItem } from '../lib/store'
 import { STATUSES, OPEN_STATUSES, PRIORITIES } from '../lib/constants'
-import { FilterBar, applyFilters, EMPTY_FILTERS, ReasonDialog, PageHeader, StatusDot } from '../components/ui'
+import { FilterBar, applyFilters, keyFromQuery, EMPTY_FILTERS, ReasonDialog, PageHeader, StatusDot } from '../components/ui'
 import ItemCard from '../components/ItemCard'
 import { itemKey } from '../lib/router'
 
@@ -16,9 +16,12 @@ export default function Board() {
   const [dragOver, setDragOver] = useState(null)
   const [pendingCancel, setPendingCancel] = useState(null)
 
+  // Al buscar por clave se muestra el ítem aunque sea una épica o esté cancelado
+  const byKey = keyFromQuery(filters.q) != null
   const visible = applyFilters(items, filters)
-    .filter(i => !(hideEpics && i.type === 'epica' && !filters.type))
-  const columns = [...OPEN_STATUSES, 'cerrada', ...(showCancelled ? ['cancelada'] : [])]
+    .filter(i => byKey || !(hideEpics && i.type === 'epica' && !filters.type))
+  const withCancelled = showCancelled || (byKey && visible.some(i => i.status === 'cancelada'))
+  const columns = [...OPEN_STATUSES, 'cerrada', ...(withCancelled ? ['cancelada'] : [])]
 
   async function drop(status, e) {
     e.preventDefault(); setDragOver(null)

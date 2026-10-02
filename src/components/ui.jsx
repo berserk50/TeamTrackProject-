@@ -188,10 +188,20 @@ export function ReasonDialog({ title, description, confirmLabel, danger, onConfi
 // Barra de filtros reutilizable
 export const EMPTY_FILTERS = { q: '', type: '', status: '', assignee: '', sprint: '', priority: '' }
 
+// "TT-12", "tt12", "TT 12" o "#12" -> 12. Un número solo no cuenta: también puede ser parte de un título.
+const KEY_QUERY = new RegExp(`^(?:#|${ITEM_PREFIX}[-\\s]?)(\\d+)$`, 'i')
+export function keyFromQuery(q = '') {
+  const m = q.trim().match(KEY_QUERY)
+  return m ? Number(m[1]) : null
+}
+
 export function applyFilters(items, f) {
+  // Buscar por clave muestra ese ítem aunque los demás filtros (sprint, estado…) lo ocultarían
+  const key = keyFromQuery(f.q)
+  if (key != null) return items.filter(i => Number(i.id) === key)
   const q = f.q.trim().toLowerCase()
   return items.filter(i =>
-    (!q || i.title.toLowerCase().includes(q) || String(i.id) === q.replace(/^(#|tt-)/i, '') ||
+    (!q || i.title.toLowerCase().includes(q) || String(i.id) === q ||
       i.tags.some(t => t.toLowerCase().includes(q))) &&
     (!f.type || i.type === f.type) &&
     (!f.status || (f.status === 'abiertos' ? !['cerrada', 'cancelada'].includes(i.status) : i.status === f.status)) &&

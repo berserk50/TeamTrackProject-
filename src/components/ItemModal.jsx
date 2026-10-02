@@ -225,6 +225,50 @@ function WatchButton({ item }) {
   )
 }
 
+/* ------------------------------- Hijos -------------------------------- */
+
+// Hijos directos y, debajo de cada uno, sus propios hijos (épica → historias → tareas)
+function ChildrenSection({ item, children, className }) {
+  const { items, membersById, setOpenItem, canEdit } = useApp()
+  const kidsOf = (id) => items.filter(i => i.parent_id === id).sort((a, b) => a.id - b.id)
+  const sorted = [...children].sort((a, b) => a.id - b.id)
+  const all = sorted.flatMap(c => [c, ...kidsOf(c.id)])
+  const valid = all.filter(c => c.status !== 'cancelada')
+  const done = valid.filter(c => c.status === 'cerrada').length
+
+  const row = (c, nested) => (
+    <li key={c.id} className={nested ? 'nested' : ''} onClick={() => setOpenItem({ id: c.id })}>
+      <TypeBadge type={c.type} />
+      <span className="grow">
+        <Link to={itemPath(c.id)} onClick={e => e.stopPropagation()}>{itemKey(c.id)}</Link> {c.title}
+      </span>
+      <PriorityBadge priority={c.priority} /> <StatusBadge status={c.status} />
+      <Assignee member={membersById[c.assignee_id]} short />
+    </li>
+  )
+
+  return (
+    <section className={className}>
+      <div className="section-head">
+        <h3 className="section-title">
+          Hijos ({children.length})
+          {valid.length > 0 && <span className="muted small"> · {done} de {valid.length} cerrados</span>}
+        </h3>
+        {canEdit && (
+          <button type="button" className="btn ghost sm" onClick={() => setOpenItem({
+            new: true,
+            defaults: { type: item.type === 'epica' ? 'historia' : 'tarea', parent_id: item.id, sprint_id: item.sprint_id },
+          })}><PlusIcon /><span>Agregar hijo</span></button>
+        )}
+      </div>
+      {children.length === 0 && <p className="muted small">Sin ítems hijos.</p>}
+      <ul className="child-list">
+        {sorted.flatMap(c => [row(c, false), ...kidsOf(c.id).map(k => row(k, true))])}
+      </ul>
+    </section>
+  )
+}
+
 /* ---------------------------- Modo lectura ---------------------------- */
 
 // Épica a la que pertenece el ítem (subiendo por la cadena de padres)
@@ -305,27 +349,7 @@ function ItemReadView({ item, children, dev, activity }) {
         )}
 
         {item.type !== 'tarea' && item.type !== 'bug' && (
-          <section className="read-section">
-            <div className="section-head">
-              <h3 className="section-title">Hijos ({children.length})</h3>
-              {canEdit && (
-                <button type="button" className="btn ghost sm" onClick={() => setOpenItem({
-                  new: true,
-                  defaults: { type: item.type === 'epica' ? 'historia' : 'tarea', parent_id: item.id, sprint_id: item.sprint_id },
-                })}><PlusIcon /><span>Agregar hijo</span></button>
-              )}
-            </div>
-            {children.length === 0 && <p className="muted small">Sin ítems hijos.</p>}
-            <ul className="child-list">
-              {children.map(c => (
-                <li key={c.id} onClick={() => setOpenItem({ id: c.id })}>
-                  <TypeBadge type={c.type} /> <span className="grow">{itemKey(c.id)} {c.title}</span>
-                  <PriorityBadge priority={c.priority} /> <StatusBadge status={c.status} />
-                  <Assignee member={membersById[c.assignee_id]} short />
-                </li>
-              ))}
-            </ul>
-          </section>
+          <ChildrenSection item={item} children={children} className="read-section" />
         )}
 
         {dev}
@@ -451,27 +475,7 @@ function Details({ item, defaults, isNew, children, onCreated, onCancel, onSaved
           </fieldset>
 
           {!isNew && item.type !== 'tarea' && item.type !== 'bug' && (
-            <section className="item-section">
-              <div className="section-head">
-                <h3 className="section-title">Hijos ({children.length})</h3>
-                {canEdit && (
-                  <button type="button" className="btn ghost sm" onClick={() => setOpenItem({
-                    new: true,
-                    defaults: { type: item.type === 'epica' ? 'historia' : 'tarea', parent_id: item.id, sprint_id: item.sprint_id },
-                  })}><PlusIcon /><span>Agregar hijo</span></button>
-                )}
-              </div>
-              {children.length === 0 && <p className="muted small">Sin ítems hijos.</p>}
-              <ul className="child-list">
-                {children.map(c => (
-                  <li key={c.id} onClick={() => setOpenItem({ id: c.id })}>
-                    <TypeBadge type={c.type} /> <span className="grow">{itemKey(c.id)} {c.title}</span>
-                    <PriorityBadge priority={c.priority} /> <StatusBadge status={c.status} />
-                    <Assignee member={membersById[c.assignee_id]} short />
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <ChildrenSection item={item} children={children} className="item-section" />
           )}
         </div>
 
