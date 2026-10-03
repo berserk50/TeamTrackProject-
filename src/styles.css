@@ -284,7 +284,11 @@ label.inline input { width: auto; }
   align-items: center; gap: 24px; max-width: 1500px; margin: 0 auto; padding: 0 var(--gutter); min-height: 56px;
 }
 .topbar .brand { grid-area: brand; }
-.topbar nav { grid-area: nav; display: flex; gap: 2px; min-width: 0; }
+.topbar nav {
+  grid-area: nav; display: flex; gap: 2px; min-width: 0;
+  overflow-x: auto; scrollbar-width: none;
+}
+.topbar nav::-webkit-scrollbar { display: none; }
 .topbar nav a {
   display: inline-flex; align-items: center; height: var(--h-sm); padding: 0 10px; border-radius: var(--radius);
   color: var(--text-2); font-weight: 500; white-space: nowrap;
@@ -805,10 +809,7 @@ button.twisty:hover { background: var(--surface-3); color: var(--text); }
 @media (max-width: 960px) {
   :root { --gutter: 20px; }
   .topbar-inner { grid-template-columns: 1fr auto; grid-template-areas: "brand user" "nav nav"; gap: 0 16px; padding-top: 10px; }
-  .topbar nav {
-    overflow-x: auto; scrollbar-width: none; margin: 6px calc(var(--gutter) * -1) 0; padding: 0 var(--gutter) 8px;
-  }
-  .topbar nav::-webkit-scrollbar { display: none; }
+  .topbar nav { margin: 6px calc(var(--gutter) * -1) 0; padding: 0 var(--gutter) 8px; }
   .col-sprint { display: none; }
   .tree-meta .prio { display: none; }
   .item-layout, .item-layout.no-activity, .item-layout.details-collapsed { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "side" "activity"; }
