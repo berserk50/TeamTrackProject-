@@ -686,6 +686,14 @@ button.twisty:hover { background: var(--surface-3); color: var(--text); }
 .comments li { display: flex; gap: 12px; }
 .comment-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 13px; }
 .comment-head .muted { font-size: 12px; color: var(--text-3); }
+.comment-mini-actions { display: flex; gap: 2px; margin-left: auto; opacity: 0; transition: opacity .12s; }
+.comments li:hover .comment-mini-actions, .comment-mini-actions:focus-within { opacity: 1; }
+.icon-btn {
+  display: flex; align-items: center; justify-content: center; width: 22px; height: 22px;
+  border: 0; border-radius: var(--radius-sm); background: none; color: var(--text-3); cursor: pointer;
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text-2); }
+.comment-edit { display: flex; flex-direction: column; gap: 6px; }
 .git-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .comment-form { display: flex; gap: 12px; margin-bottom: 20px; }
 .comment-form .grow { display: flex; flex-direction: column; gap: 8px; }

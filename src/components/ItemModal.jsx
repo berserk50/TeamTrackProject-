@@ -8,7 +8,7 @@ import {
 import { Modal, ReasonDialog, TypeBadge, StatusBadge, Avatar, Assignee, PriorityBadge, RichText } from './ui'
 import HistoryList from './HistoryList'
 import { Link, navigate, itemKey, itemPath } from '../lib/router'
-import { RepoIcon, BranchIcon, ExternalIcon, FileIcon, PlusIcon, LinkIcon, EditIcon, ChevronIcon, EyeIcon } from './icons'
+import { RepoIcon, BranchIcon, ExternalIcon, FileIcon, PlusIcon, LinkIcon, EditIcon, ChevronIcon, EyeIcon, TrashIcon } from './icons'
 
 const FIELDS = [
   'type', 'title', 'description', 'acceptance_criteria', 'status', 'priority', 'severity',
@@ -601,15 +601,27 @@ function useComments(itemId) {
   }
   useEffect(() => { setList([]); reload() }, [itemId])
 
-  // Los comentarios de otros aparecen sin reabrir el ítem
+  // Comentarios nuevos, editados o eliminados por otros aparecen sin reabrir el ítem
   useEffect(() => {
     const ch = supabase.channel('comments-' + itemId)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments', filter: `item_id=eq.${itemId}` }, reload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `item_id=eq.${itemId}` }, reload)
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [itemId])
 
   return { list, reload }
+}
+
+async function updateComment(id, body, fail) {
+  const { error } = await supabase.from('comments').update({ body: body.trim() || null }).eq('id', id)
+  if (error) { fail(error); return false }
+  return true
+}
+
+async function deleteComment(id, fail) {
+  const { error } = await supabase.from('comments').delete().eq('id', id)
+  if (error) { fail(error); return false }
+  return true
 }
 
 // Inserta un comentario; valida que los enlaces de commit/PR sean URLs.
@@ -737,7 +749,25 @@ function Comments({ item, comments }) {
   const [mention, setMention] = useState(null) // { query, start } mientras se escribe "@algo"
   const [pick, setPick] = useState(0)
   const bodyRef = useRef(null)
+  const [editingId, setEditingId] = useState(null)
+  const [editBody, setEditBody] = useState('')
   const list = comments.list
+
+  function startEdit(cm) { setEditingId(cm.id); setEditBody(cm.body ?? '') }
+  function cancelEdit() { setEditingId(null); setEditBody('') }
+
+  async function saveEdit(id) {
+    if (!editBody.trim()) return
+    const ok = await updateComment(id, editBody, fail)
+    if (!ok) return
+    cancelEdit(); comments.reload()
+  }
+
+  async function removeComment(id) {
+    if (!confirm('¿Eliminar este comentario?')) return
+    const ok = await deleteComment(id, fail)
+    if (ok) comments.reload()
+  }
 
   const hasContent = Object.values(c).some(v => v.trim())
 
@@ -865,8 +895,26 @@ function Comments({ item, comments }) {
                   <div className="comment-head">
                     <b>{membersById[cm.author_id]?.full_name ?? 'Ex miembro'}</b>
                     <span className="muted" title={fmtDateTime(cm.created_at)}>{fmtTime(cm.created_at)}</span>
+                    {cm.updated_at && <span className="muted" title={'Editado ' + fmtDateTime(cm.updated_at)}>· editado</span>}
+                    {canEdit && editingId !== cm.id && (
+                      <span className="comment-mini-actions">
+                        <button type="button" className="icon-btn" title="Editar comentario" aria-label="Editar comentario" onClick={() => startEdit(cm)}><EditIcon size={13} /></button>
+                        <button type="button" className="icon-btn" title="Eliminar comentario" aria-label="Eliminar comentario" onClick={() => removeComment(cm.id)}><TrashIcon size={13} /></button>
+                      </span>
+                    )}
                   </div>
-                  {cm.body && <RichText className="pre" text={cm.body} mentions={cm.mentions?.map(id => membersById[id]?.full_name).filter(Boolean)} />}
+                  {editingId === cm.id ? (
+                    <div className="comment-edit">
+                      <textarea rows={2} value={editBody} onChange={e => setEditBody(e.target.value)} autoFocus />
+                      <div className="comment-actions">
+                        <span className="grow" />
+                        <button type="button" className="btn ghost sm" onClick={cancelEdit}>Cancelar</button>
+                        <button type="button" className="btn primary sm" disabled={!editBody.trim()} onClick={() => saveEdit(cm.id)}>Guardar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    cm.body && <RichText className="pre" text={cm.body} mentions={cm.mentions?.map(id => membersById[id]?.full_name).filter(Boolean)} />
+                  )}
                   {(cm.repository || cm.branch || cm.commit_url || cm.pr_url) && (
                     <div className="git-chips">
                       {cm.repository && <span className="chip"><RepoIcon size={13} />{cm.repository}</span>}

@@ -29,3 +29,4 @@ export const LinkIcon = (p) => <Svg {...p}><path d="M6.5 9.5a3 3 0 004.2 0l2-2a3
 export const EditIcon = (p) => <Svg {...p}><path d="M10.5 2.5l3 3L6 13H3v-3l7.5-7.5z" /></Svg>
 export const BellIcon = (p) => <Svg {...p}><path d="M4 11.5V7a4 4 0 018 0v4.5l1 1H3l1-1zM6.5 13.5a1.5 1.5 0 003 0" /></Svg>
 export const EyeIcon = (p) => <Svg {...p}><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z" /><circle cx="8" cy="8" r="2" /></Svg>
+export const TrashIcon = (p) => <Svg {...p}><path d="M3.5 4.5h9M6 4.5V3a1 1 0 011-1h2a1 1 0 011 1v1.5M12 4.5l-.6 8.3a1.5 1.5 0 01-1.5 1.4H6.1a1.5 1.5 0 01-1.5-1.4L4 4.5" /></Svg>
