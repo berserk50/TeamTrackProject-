@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../lib/store'
-import { PRIORITIES, STATUS_KEYS, fmtDate, isOverdue } from '../lib/constants'
-import { FilterBar, applyFilters, EMPTY_FILTERS, TypeBadge, StatusBadge, PriorityBadge, Assignee, PageHeader } from '../components/ui'
+import { PRIORITIES, STATUS_KEYS, fmtDate, isOverdue, groupBySprint } from '../lib/constants'
+import { FilterBar, applyFilters, EMPTY_FILTERS, TypeBadge, StatusBadge, PriorityBadge, Assignee, SprintBadge, PageHeader } from '../components/ui'
 import { ArrowUpIcon, ArrowDownIcon } from '../components/icons'
 import { Link, itemKey, itemPath } from '../lib/router'
 
@@ -33,11 +33,47 @@ function ChildrenCell({ kids = [] }) {
   )
 }
 
+// Fila separadora con el nombre del sprint (y sus puntos) seguida de sus ítems
+function GroupRows({ group, activeSprint, canEdit, grouped, membersById, sprintsById, itemsById, childrenOf, selected, toggle, setOpenItem }) {
+  const pts = group.rows.reduce((s, i) => s + Number(i.story_points ?? 0), 0)
+  const cols = canEdit ? 12 : 11
+  return (
+    <>
+      {grouped && (
+        <tr className="group-row">
+          <td colSpan={cols}>
+            <SprintBadge sprint={group.sprint} />
+            {group.sprint && group.sprint.id === activeSprint?.id && <span className="muted small"> · sprint activo</span>}
+            <span className="muted small"> · {group.rows.length} ítem(s) · {pts} pts</span>
+          </td>
+        </tr>
+      )}
+      {group.rows.map(i => (
+        <tr key={i.id} onClick={() => setOpenItem({ id: i.id })} className={i.status === 'cancelada' ? 'dim' : ''}>
+          {canEdit && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(i.id)} onChange={() => toggle(i.id)} /></td>}
+          <td className="nowrap"><Link className="key-link" to={itemPath(i.id)} onClick={e => e.stopPropagation()}>{itemKey(i.id)}</Link></td>
+          <td><TypeBadge type={i.type} /></td>
+          <td className="title-cell">{i.title}{i.tags.map(t => <span key={t} className="tag">{t}</span>)}</td>
+          <td><StatusBadge status={i.status} /></td>
+          <td><PriorityBadge priority={i.priority} /></td>
+          <td><Assignee member={membersById[i.assignee_id]} /></td>
+          <td className="small col-sprint"><SprintBadge sprint={sprintsById[i.sprint_id]} /></td>
+          <td className="num">{i.story_points != null ? Number(i.story_points) : ''}</td>
+          <td className={'nowrap' + (isOverdue(i) ? ' overdue' : '')}>{fmtDate(i.due_date)}</td>
+          <td className="small muted col-parent">{itemsById[i.parent_id] ? `${itemKey(i.parent_id)} ${itemsById[i.parent_id].title}` : ''}</td>
+          <td className="col-children"><ChildrenCell kids={childrenOf[i.id]} /></td>
+        </tr>
+      ))}
+    </>
+  )
+}
+
 export default function ListView() {
-  const { items, membersById, sprintsById, sprints, activeMembers, itemsById, canEdit, setOpenItem, fail, toast, loadItems } = useApp()
+  const { items, membersById, sprintsById, sprints, activeSprint, activeMembers, itemsById, canEdit, setOpenItem, fail, toast, loadItems } = useApp()
   const [filters, setFilters] = useState({ ...EMPTY_FILTERS, status: 'abiertos' })
   const [sort, setSort] = useState({ key: 'priority', dir: 1 })
   const [selected, setSelected] = useState(new Set())
+  const [grouped, setGrouped] = useState(true)
 
   const childrenOf = {}
   for (const i of items) if (i.parent_id) (childrenOf[i.parent_id] ??= []).push(i)
@@ -45,6 +81,7 @@ export default function ListView() {
 
   const rows = applyFilters(items, filters).sort((a, b) => SORTS[sort.key](a, b) * sort.dir || b.id - a.id)
   const totalPts = rows.reduce((s, i) => s + Number(i.story_points ?? 0), 0)
+  const groups = grouped ? groupBySprint(rows, sprints, activeSprint, sprintsById) : [{ key: 'todos', sprint: null, rows }]
 
   const th = (key, label) => (
     <th className="sortable" onClick={() => setSort({ key, dir: sort.key === key ? -sort.dir : 1 })}>
@@ -65,7 +102,9 @@ export default function ListView() {
 
   return (
     <div>
-      <PageHeader title="Backlog" subtitle={`${rows.length} ítems · ${totalPts} pts`} />
+      <PageHeader title="Backlog" subtitle={`${rows.length} ítems · ${totalPts} pts`}>
+        <label className="check"><input type="checkbox" checked={grouped} onChange={e => setGrouped(e.target.checked)} /> Agrupar por sprint</label>
+      </PageHeader>
       <FilterBar filters={filters} setFilters={setFilters} />
 
       {canEdit && selected.size > 0 && (
@@ -99,23 +138,12 @@ export default function ListView() {
             </tr>
           </thead>
           <tbody>
-            {rows.map(i => (
-              <tr key={i.id} onClick={() => setOpenItem({ id: i.id })} className={i.status === 'cancelada' ? 'dim' : ''}>
-                {canEdit && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(i.id)} onChange={() => toggle(i.id)} /></td>}
-                <td className="nowrap"><Link className="key-link" to={itemPath(i.id)} onClick={e => e.stopPropagation()}>{itemKey(i.id)}</Link></td>
-                <td><TypeBadge type={i.type} /></td>
-                <td className="title-cell">{i.title}{i.tags.map(t => <span key={t} className="tag">{t}</span>)}</td>
-                <td><StatusBadge status={i.status} /></td>
-                <td><PriorityBadge priority={i.priority} /></td>
-                <td><Assignee member={membersById[i.assignee_id]} /></td>
-                <td className="small col-sprint">{sprintsById[i.sprint_id]?.name ?? <span className="muted">Backlog</span>}</td>
-                <td className="num">{i.story_points != null ? Number(i.story_points) : ''}</td>
-                <td className={'nowrap' + (isOverdue(i) ? ' overdue' : '')}>{fmtDate(i.due_date)}</td>
-                <td className="small muted col-parent">{itemsById[i.parent_id] ? `${itemKey(i.parent_id)} ${itemsById[i.parent_id].title}` : ''}</td>
-                <td className="col-children"><ChildrenCell kids={childrenOf[i.id]} /></td>
-              </tr>
+            {groups.map(g => (
+              <GroupRows key={g.key} group={g} sprintsById={sprintsById} activeSprint={activeSprint} canEdit={canEdit}
+                         grouped={grouped} membersById={membersById} itemsById={itemsById} childrenOf={childrenOf}
+                         selected={selected} toggle={toggle} setOpenItem={setOpenItem} />
             ))}
-            {rows.length === 0 && <tr><td colSpan={12} className="empty-row">No hay ítems con estos filtros.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={canEdit ? 12 : 11} className="empty-row">No hay ítems con estos filtros.</td></tr>}
           </tbody>
         </table>
       </div>

@@ -394,7 +394,10 @@ label.inline input { width: auto; }
 .key-link { font-weight: 500; font-variant-numeric: tabular-nums; }
 .card-title { font-weight: 500; margin: 8px 0 2px; line-height: 1.4; overflow-wrap: anywhere; }
 .card-parent { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-sprint { margin-top: 4px; }
+.card-sprint .pill { margin-left: 0; }
 .card-bottom { margin-top: 10px; }
+.pill.backlog { font-style: italic; }
 .card-due { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-2); }
 .card-due.overdue { color: var(--danger); }
 
@@ -420,6 +423,8 @@ label.inline input { width: auto; }
 .child-key { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .child-key.done { text-decoration: line-through; color: var(--text-3); }
 .table .empty-row { color: var(--text-2); text-align: center; padding: 32px 12px; cursor: default; }
+.group-row td { background: var(--surface-2); font-weight: 500; font-size: 13px; padding: 7px 12px; cursor: default; }
+.group-row .pill { margin-left: 0; margin-right: 8px; }
 .title-cell { font-weight: 500; min-width: 240px; }
 .title-cell .tag { margin-left: 6px; }
 .assignee { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 13px; color: var(--text); min-width: 0; }
@@ -461,6 +466,10 @@ button.twisty:hover { background: var(--surface-3); color: var(--text); }
 .stat span { color: var(--text-2); font-size: 12.5px; }
 .stat b { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .stat.bad b { color: var(--danger); }
+
+.sprint-group + .sprint-group { margin-top: 24px; }
+.sprint-group-title { display: flex; align-items: center; margin: 0 0 10px; font-size: 14px; }
+.sprint-group-title .pill { margin-left: 0; }
 
 /* =========================================================================
    Sprints

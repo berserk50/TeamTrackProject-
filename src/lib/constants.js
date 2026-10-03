@@ -79,6 +79,18 @@ export function dayLabel(value) {
   return date[0].toUpperCase() + date.slice(1)
 }
 
+// Agrupa ítems por sprint: el activo primero, luego el resto en el orden
+// habitual de la app (sprints ordenados por fecha de inicio), y el Backlog al final.
+// Cada grupo trae { key, sprint, rows }; "key" es el id del sprint o 'backlog'.
+export function groupBySprint(rows, sprints, activeSprint, sprintsById) {
+  const order = [...(activeSprint ? [activeSprint.id] : []), ...sprints.map(s => s.id).filter(id => id !== activeSprint?.id), 'backlog']
+  const buckets = new Map(order.map(k => [k, []]))
+  for (const r of rows) buckets.get(r.sprint_id ?? 'backlog')?.push(r)
+  return order
+    .map(key => ({ key, sprint: key === 'backlog' ? null : sprintsById[key], rows: buckets.get(key) ?? [] }))
+    .filter(g => g.rows.length > 0)
+}
+
 export function isOverdue(item) {
   if (!item.due_date || !OPEN_STATUSES.includes(item.status)) return false
   return new Date(item.due_date + 'T23:59:59') < new Date()

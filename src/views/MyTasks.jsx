@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { useApp } from '../lib/store'
-import { STATUSES, OPEN_STATUSES, PRIORITIES, isOverdue } from '../lib/constants'
+import { STATUSES, OPEN_STATUSES, PRIORITIES, isOverdue, groupBySprint } from '../lib/constants'
 import ItemCard from '../components/ItemCard'
-import { PageHeader, StatusDot } from '../components/ui'
+import { PageHeader, StatusDot, SprintBadge } from '../components/ui'
 
 export default function MyTasks() {
-  const { items, me, activeMembers } = useApp()
+  const { items, me, activeMembers, sprints, sprintsById, activeSprint } = useApp()
   const [who, setWho] = useState(me?.id ?? activeMembers[0]?.id ?? '')
   const [onlySprint, setOnlySprint] = useState(false)
-  const { activeSprint } = useApp()
 
   const mine = items.filter(i =>
     i.assignee_id === who && OPEN_STATUSES.includes(i.status) &&
@@ -17,6 +16,7 @@ export default function MyTasks() {
 
   const overdue = mine.filter(isOverdue).length
   const pts = mine.reduce((s, i) => s + Number(i.story_points ?? 0), 0)
+  const groups = groupBySprint(mine, sprints, activeSprint, sprintsById)
 
   return (
     <div>
@@ -31,19 +31,29 @@ export default function MyTasks() {
         <div className="stat"><span>Story points</span><b>{pts}</b></div>
         <div className={'stat' + (overdue ? ' bad' : '')}><span>Vencidas</span><b>{overdue}</b></div>
       </div>
-      <div className="board">
-        {OPEN_STATUSES.map(s => (
-          <section key={s} className="column">
-            <header>
-              <span className="column-title"><StatusDot status={s} />{STATUSES[s].label}</span>
-              <span className="column-count">{mine.filter(i => i.status === s).length}</span>
-            </header>
-            <div className="column-body">
-              {mine.filter(i => i.status === s).map(i => <ItemCard key={i.id} item={i} />)}
-            </div>
-          </section>
-        ))}
-      </div>
+      {groups.length === 0 && <p className="empty-state card">Sin tareas abiertas.</p>}
+      {groups.map(g => (
+        <section key={g.key} className="sprint-group">
+          <h3 className="sprint-group-title">
+            <SprintBadge sprint={g.sprint} />
+            {g.sprint && g.sprint.id === activeSprint?.id && <span className="muted small"> · sprint activo</span>}
+            <span className="muted small"> · {g.rows.length} tarea(s)</span>
+          </h3>
+          <div className="board">
+            {OPEN_STATUSES.map(s => (
+              <section key={s} className="column">
+                <header>
+                  <span className="column-title"><StatusDot status={s} />{STATUSES[s].label}</span>
+                  <span className="column-count">{g.rows.filter(i => i.status === s).length}</span>
+                </header>
+                <div className="column-body">
+                  {g.rows.filter(i => i.status === s).map(i => <ItemCard key={i.id} item={i} hideSprint />)}
+                </div>
+              </section>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   )
 }

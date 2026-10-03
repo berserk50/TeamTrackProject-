@@ -22,6 +22,12 @@ export function PriorityBadge({ priority }) {
   return <span className="prio" title={'Prioridad ' + p.label}><span className={'dot prio-' + priority} aria-hidden="true" />{p.label}</span>
 }
 
+// Indica a qué sprint pertenece un ítem (o que está en el Backlog, sin sprint)
+export function SprintBadge({ sprint }) {
+  if (!sprint) return <span className="pill backlog" title="Sin sprint asignado">Backlog</span>
+  return <span className={'pill ' + sprint.status} title={`Sprint: ${sprint.name}`}>{sprint.name}</span>
+}
+
 export function initials(name = '') {
   return name.replace(/[^\p{L}\s]/gu, '').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
 }

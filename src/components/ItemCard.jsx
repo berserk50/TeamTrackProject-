@@ -1,11 +1,11 @@
 import { useApp } from '../lib/store'
 import { fmtDate, isOverdue } from '../lib/constants'
-import { TypeBadge, PriorityBadge, Assignee } from './ui'
+import { TypeBadge, PriorityBadge, Assignee, SprintBadge } from './ui'
 import { CalendarIcon } from './icons'
 import { Link, itemKey, itemPath } from '../lib/router'
 
-export default function ItemCard({ item, draggable, onDragStart }) {
-  const { membersById, itemsById, setOpenItem } = useApp()
+export default function ItemCard({ item, draggable, onDragStart, hideSprint }) {
+  const { membersById, itemsById, sprintsById, setOpenItem } = useApp()
   const parent = itemsById[item.parent_id]
   return (
     <div
@@ -22,6 +22,7 @@ export default function ItemCard({ item, draggable, onDragStart }) {
       </div>
       <div className="card-title">{item.title}</div>
       {parent && <div className="card-parent">↳ {parent.title}</div>}
+      {!hideSprint && <div className="card-sprint"><SprintBadge sprint={sprintsById[item.sprint_id]} /></div>}
       {item.tags.length > 0 && (
         <div className="tags">{item.tags.map(t => <span key={t} className="tag">{t}</span>)}</div>
       )}
