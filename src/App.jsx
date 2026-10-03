@@ -9,6 +9,7 @@ import ListView from './views/ListView'
 import Hierarchy from './views/Hierarchy'
 import MyTasks from './views/MyTasks'
 import Sprints from './views/Sprints'
+import Reports from './views/Reports'
 import History from './views/History'
 import Team from './views/Team'
 import { ThemeToggle } from './components/ui'
@@ -21,6 +22,7 @@ const VIEWS = [
   { key: 'jerarquia',  label: 'Jerarquía',  comp: Hierarchy },
   { key: 'mis-tareas', label: 'Mis tareas', comp: MyTasks },
   { key: 'sprints',    label: 'Sprints',    comp: Sprints },
+  { key: 'reportes',   label: 'Reportes',   comp: Reports },
   { key: 'historial',  label: 'Historial',  comp: History },
   { key: 'equipo',     label: 'Equipo',     comp: Team },
 ]

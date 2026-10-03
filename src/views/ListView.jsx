@@ -5,6 +5,7 @@ import { PRIORITIES, STATUS_KEYS, fmtDate, isOverdue, groupBySprint } from '../l
 import { FilterBar, applyFilters, EMPTY_FILTERS, TypeBadge, StatusBadge, PriorityBadge, Assignee, SprintBadge, PageHeader } from '../components/ui'
 import { ArrowUpIcon, ArrowDownIcon } from '../components/icons'
 import { Link, itemKey, itemPath } from '../lib/router'
+import { exportWorkItems } from '../lib/csv'
 
 const SORTS = {
   id:       (a, b) => a.id - b.id,
@@ -104,6 +105,7 @@ export default function ListView() {
     <div>
       <PageHeader title="Backlog" subtitle={`${rows.length} ítems · ${totalPts} pts`}>
         <label className="check"><input type="checkbox" checked={grouped} onChange={e => setGrouped(e.target.checked)} /> Agrupar por sprint</label>
+        <button className="btn ghost sm" onClick={() => exportWorkItems('teamtrack-backlog-filtrado.csv', rows, { membersById, sprintsById })}>Exportar CSV</button>
       </PageHeader>
       <FilterBar filters={filters} setFilters={setFilters} />
 
