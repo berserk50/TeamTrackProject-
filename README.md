@@ -186,6 +186,8 @@ Cada integrante entra por primera vez con **"Primera vez (crear contraseña)"**,
 ```
 supabase/schema.sql        Base de datos: tablas, reglas, historial, permisos, storage
 supabase/notificaciones.sql Notificaciones, menciones (@) y seguidores (se ejecuta después de schema.sql)
+supabase/reinicio_tramites_migratorios.sql  Borra el tablero y carga el backlog de Trámites Migratorios
+supabase/generar_reinicio.mjs               Genera el SQL anterior a partir del backlog del proyecto
 src/lib/supabase.js        Cliente de Supabase y mensajes de error
 src/lib/constants.js       Tipos, estados, prioridades, colores y formatos
 src/lib/store.jsx          Estado global, carga de datos y tiempo real
@@ -203,3 +205,25 @@ src/views/                 Tablero, Backlog, Jerarquía, Mis tareas, Sprints, Hi
 | `comments` | Comentarios y datos de GitHub |
 | `attachments` | Metadatos de los archivos (el archivo físico está en Storage) |
 | `history` | Registro de cambios (solo lo escriben los triggers) |
+
+## 14. Proyecto en seguimiento: Trámites Migratorios
+
+Desde el 11 de octubre de 2026 el tablero da seguimiento a [Death272004/Tr-mites-Migratorios](https://github.com/Death272004/Tr-mites-Migratorios). El contenido sale de `Documentacion/05-backlog-siete-sprints.md` de ese repositorio: 10 épicas, 36 historias de usuario y 169 tareas en 7 sprints de una semana.
+
+| Rol del backlog | Persona |
+|---|---|
+| FE (frontend) | Jonhatan (Jonas) |
+| BE (backend) | Edgar Rosario |
+| QA | Vivian Paris |
+| LT / DevOps | Kennet Carter |
+| PO y DOC | Richard Rodriguez |
+
+Cada historia y cada tarea se asigna al primer rol que indica el backlog; los demás roles quedan en la descripción y en las etiquetas.
+
+Para volver a cargar el tablero desde el backlog (**borra ítems, comentarios, adjuntos, historial, avisos y sprints**; conserva los miembros):
+
+```bash
+node supabase/generar_reinicio.mjs ruta/a/05-backlog-siete-sprints.md supabase/reinicio_tramites_migratorios.sql
+```
+
+Luego se ejecuta `supabase/reinicio_tramites_migratorios.sql` completo en el SQL Editor de Supabase. Las fechas de los sprints, el reparto de roles y las historias que arrancan *En revisión* se cambian al inicio de `generar_reinicio.mjs`.
