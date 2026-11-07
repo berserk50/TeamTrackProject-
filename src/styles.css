@@ -287,14 +287,15 @@ label.inline input { width: auto; }
 .who { font-size: 13px; color: var(--text-2); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nav-toggle { display: none; width: var(--h-sm); padding: 0; justify-content: center; }
 
-/* Contenido a la izquierda, menú de secciones en columna a la derecha */
-.layout { display: grid; grid-template-columns: minmax(0, 1fr) var(--sidenav-w, 200px); align-items: start; }
+/* Menú de secciones en columna a la izquierda, contenido a la derecha */
+.layout { display: grid; grid-template-columns: var(--sidenav-w, 200px) minmax(0, 1fr); align-items: start; }
+.topbar-start { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .content { padding: 24px var(--gutter) 48px; min-width: 0; width: 100%; max-width: 1500px; margin: 0 auto; }
 
 .sidenav {
   position: sticky; top: 56px; height: calc(100vh - 56px); height: calc(100dvh - 56px); overflow-y: auto;
   display: flex; flex-direction: column; gap: 2px; padding: 16px 12px;
-  background: var(--surface); border-left: 1px solid var(--border);
+  background: var(--surface); border-right: 1px solid var(--border);
 }
 .sidenav a {
   display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; border-radius: var(--radius);
@@ -872,14 +873,14 @@ button.twisty:hover { background: var(--surface-3); color: var(--text); }
   :root { --sidenav-w: 176px; }
 }
 
-/* Tablet: el menú lateral pasa a un panel que se abre desde la derecha con el botón ☰ */
+/* Tablet: el menú lateral pasa a un panel que se abre desde la izquierda con el botón ☰ */
 @media (max-width: 960px) {
   :root { --gutter: 20px; }
   .layout { grid-template-columns: minmax(0, 1fr); }
   .nav-toggle { display: inline-flex; }
   .sidenav {
-    position: fixed; top: 56px; right: 0; bottom: 0; height: auto; width: min(260px, 80vw); z-index: 30;
-    box-shadow: var(--shadow-lg); transform: translateX(100%); visibility: hidden;
+    position: fixed; top: 56px; left: 0; bottom: 0; height: auto; width: min(260px, 80vw); z-index: 30;
+    box-shadow: var(--shadow-lg); transform: translateX(-100%); visibility: hidden;
     transition: transform .18s ease, visibility 0s linear .18s;
   }
   .nav-open .sidenav { transform: none; visibility: visible; transition: transform .18s ease; }

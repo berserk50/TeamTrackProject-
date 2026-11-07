@@ -89,7 +89,13 @@ function Shell() {
     <div className={'app' + (navOpen ? ' nav-open' : '')}>
       <header className="topbar">
         <div className="topbar-inner">
-          <Link className="brand" to="/#tablero"><span className="brand-mark" aria-hidden="true" />TeamTrack</Link>
+          <div className="topbar-start">
+            <button type="button" className="btn ghost sm nav-toggle" aria-label={navOpen ? 'Cerrar menú' : 'Abrir menú'}
+                    aria-expanded={navOpen} aria-controls="side-nav" onClick={() => setNavOpen(o => !o)}>
+              {navOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
+            <Link className="brand" to="/#tablero"><span className="brand-mark" aria-hidden="true" />TeamTrack</Link>
+          </div>
           <div className="user">
             {canEdit && (
               <button className="btn primary sm" onClick={() => setOpenItem({
@@ -106,20 +112,12 @@ function Shell() {
             </span>
             <ThemeToggle />
             <button className="btn ghost sm" onClick={onSignOut}>{session ? 'Salir' : 'Iniciar sesión'}</button>
-            <button type="button" className="btn ghost sm nav-toggle" aria-label={navOpen ? 'Cerrar menú' : 'Abrir menú'}
-                    aria-expanded={navOpen} aria-controls="side-nav" onClick={() => setNavOpen(o => !o)}>
-              {navOpen ? <CloseIcon /> : <MenuIcon />}
-            </button>
           </div>
         </div>
       </header>
 
       <div className="layout">
-        <main className="content">
-          {loading ? <p className="muted">Cargando datos…</p> : route.itemId ? <ItemPage id={route.itemId} /> : <Current />}
-        </main>
-
-        {/* Menú de secciones: columna fija a la derecha; en pantallas chicas, panel desplegable */}
+        {/* Menú de secciones: columna fija a la izquierda; en pantallas chicas, panel desplegable */}
         <nav id="side-nav" className="sidenav" aria-label="Secciones">
           {VIEWS.map(({ key, label, Icon }) => (
             <Link key={key} to={'/#' + key} className={view === key ? 'active' : ''}
@@ -129,6 +127,10 @@ function Shell() {
           ))}
         </nav>
         {navOpen && <div className="sidenav-backdrop" onClick={() => setNavOpen(false)} aria-hidden="true" />}
+
+        <main className="content">
+          {loading ? <p className="muted">Cargando datos…</p> : route.itemId ? <ItemPage id={route.itemId} /> : <Current />}
+        </main>
       </div>
 
       {openItem && <ItemModal key={openItem.id ?? 'new'} target={openItem} onClose={() => setOpenItem(null)} />}
