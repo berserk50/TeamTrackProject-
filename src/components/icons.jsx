@@ -30,3 +30,14 @@ export const EditIcon = (p) => <Svg {...p}><path d="M10.5 2.5l3 3L6 13H3v-3l7.5-
 export const BellIcon = (p) => <Svg {...p}><path d="M4 11.5V7a4 4 0 018 0v4.5l1 1H3l1-1zM6.5 13.5a1.5 1.5 0 003 0" /></Svg>
 export const EyeIcon = (p) => <Svg {...p}><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z" /><circle cx="8" cy="8" r="2" /></Svg>
 export const TrashIcon = (p) => <Svg {...p}><path d="M3.5 4.5h9M6 4.5V3a1 1 0 011-1h2a1 1 0 011 1v1.5M12 4.5l-.6 8.3a1.5 1.5 0 01-1.5 1.4H6.1a1.5 1.5 0 01-1.5-1.4L4 4.5" /></Svg>
+
+// Navegación lateral
+export const MenuIcon = (p) => <Svg {...p}><path d="M2.5 4h11M2.5 8h11M2.5 12h11" /></Svg>
+export const BoardIcon = (p) => <Svg {...p}><rect x="2" y="2.5" width="12" height="11" rx="1.5" /><path d="M6 2.5v11M10 2.5v11" /></Svg>
+export const ListIcon = (p) => <Svg {...p}><path d="M5.5 4h8M5.5 8h8M5.5 12h8" /><circle cx="2.75" cy="4" r=".6" /><circle cx="2.75" cy="8" r=".6" /><circle cx="2.75" cy="12" r=".6" /></Svg>
+export const TreeIcon = (p) => <Svg {...p}><rect x="2" y="2" width="5" height="3.5" rx="1" /><rect x="8.5" y="6.5" width="5.5" height="3" rx="1" /><rect x="8.5" y="11" width="5.5" height="3" rx="1" /><path d="M4.5 5.5v7h4M4.5 8h4" /></Svg>
+export const CheckIcon = (p) => <Svg {...p}><rect x="2.5" y="2.5" width="11" height="11" rx="2" /><path d="M5.5 8l2 2 3.5-4" /></Svg>
+export const SprintIcon = (p) => <Svg {...p}><path d="M13 8a5 5 0 11-1.5-3.55M13 2.5v2.5h-2.5" /></Svg>
+export const ChartIcon = (p) => <Svg {...p}><path d="M2.5 13.5h11M4.5 11V8M8 11V4.5M11.5 11V6.5" /></Svg>
+export const HistoryIcon = (p) => <Svg {...p}><circle cx="8" cy="8" r="5.5" /><path d="M8 5v3l2 1.5" /></Svg>
+export const TeamIcon = (p) => <Svg {...p}><circle cx="6" cy="5.5" r="2.25" /><path d="M2 13c0-2.2 1.8-3.5 4-3.5s4 1.3 4 3.5" /><circle cx="11.25" cy="6" r="1.75" /><path d="M11 9.5c1.7 0 3 1 3 3" /></Svg>

@@ -14,17 +14,17 @@ import History from './views/History'
 import Team from './views/Team'
 import { ThemeToggle } from './components/ui'
 import NotificationBell from './components/Notifications'
-import { PlusIcon } from './components/icons'
+import { PlusIcon, MenuIcon, CloseIcon, BoardIcon, ListIcon, TreeIcon, CheckIcon, SprintIcon, ChartIcon, HistoryIcon, TeamIcon } from './components/icons'
 
 const VIEWS = [
-  { key: 'tablero',    label: 'Tablero',    comp: Board },
-  { key: 'lista',      label: 'Backlog',    comp: ListView },
-  { key: 'jerarquia',  label: 'Jerarquía',  comp: Hierarchy },
-  { key: 'mis-tareas', label: 'Mis tareas', comp: MyTasks },
-  { key: 'sprints',    label: 'Sprints',    comp: Sprints },
-  { key: 'reportes',   label: 'Reportes',   comp: Reports },
-  { key: 'historial',  label: 'Historial',  comp: History },
-  { key: 'equipo',     label: 'Equipo',     comp: Team },
+  { key: 'tablero',    label: 'Tablero',    comp: Board,     Icon: BoardIcon },
+  { key: 'lista',      label: 'Backlog',    comp: ListView,  Icon: ListIcon },
+  { key: 'jerarquia',  label: 'Jerarquía',  comp: Hierarchy, Icon: TreeIcon },
+  { key: 'mis-tareas', label: 'Mis tareas', comp: MyTasks,   Icon: CheckIcon },
+  { key: 'sprints',    label: 'Sprints',    comp: Sprints,   Icon: SprintIcon },
+  { key: 'reportes',   label: 'Reportes',   comp: Reports,   Icon: ChartIcon },
+  { key: 'historial',  label: 'Historial',  comp: History,   Icon: HistoryIcon },
+  { key: 'equipo',     label: 'Equipo',     comp: Team,      Icon: TeamIcon },
 ]
 
 export default function App() {
@@ -74,18 +74,22 @@ function Shell() {
   const view = route.itemId ? null : route.view
 
   const Current = (VIEWS.find(v => v.key === view) ?? VIEWS[0]).comp
+  const [navOpen, setNavOpen] = useState(false)   // menú lateral desplegable en pantallas chicas
+
+  // Al cambiar de vista o de ítem se cierra el menú desplegable
+  useEffect(() => { setNavOpen(false) }, [view, route.itemId])
+  useEffect(() => {
+    if (!navOpen) return
+    const onKey = e => { if (e.key === 'Escape') setNavOpen(false) }
+    addEventListener('keydown', onKey)
+    return () => removeEventListener('keydown', onKey)
+  }, [navOpen])
 
   return (
-    <div className="app">
+    <div className={'app' + (navOpen ? ' nav-open' : '')}>
       <header className="topbar">
         <div className="topbar-inner">
           <Link className="brand" to="/#tablero"><span className="brand-mark" aria-hidden="true" />TeamTrack</Link>
-          <nav aria-label="Secciones">
-            {VIEWS.map(v => (
-              <Link key={v.key} to={'/#' + v.key} className={view === v.key ? 'active' : ''}
-                    aria-current={view === v.key ? 'page' : undefined}>{v.label}</Link>
-            ))}
-          </nav>
           <div className="user">
             {canEdit && (
               <button className="btn primary sm" onClick={() => setOpenItem({
@@ -102,13 +106,30 @@ function Shell() {
             </span>
             <ThemeToggle />
             <button className="btn ghost sm" onClick={onSignOut}>{session ? 'Salir' : 'Iniciar sesión'}</button>
+            <button type="button" className="btn ghost sm nav-toggle" aria-label={navOpen ? 'Cerrar menú' : 'Abrir menú'}
+                    aria-expanded={navOpen} aria-controls="side-nav" onClick={() => setNavOpen(o => !o)}>
+              {navOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="content">
-        {loading ? <p className="muted">Cargando datos…</p> : route.itemId ? <ItemPage id={route.itemId} /> : <Current />}
-      </main>
+      <div className="layout">
+        <main className="content">
+          {loading ? <p className="muted">Cargando datos…</p> : route.itemId ? <ItemPage id={route.itemId} /> : <Current />}
+        </main>
+
+        {/* Menú de secciones: columna fija a la derecha; en pantallas chicas, panel desplegable */}
+        <nav id="side-nav" className="sidenav" aria-label="Secciones">
+          {VIEWS.map(({ key, label, Icon }) => (
+            <Link key={key} to={'/#' + key} className={view === key ? 'active' : ''}
+                  aria-current={view === key ? 'page' : undefined}>
+              <Icon /><span>{label}</span>
+            </Link>
+          ))}
+        </nav>
+        {navOpen && <div className="sidenav-backdrop" onClick={() => setNavOpen(false)} aria-hidden="true" />}
+      </div>
 
       {openItem && <ItemModal key={openItem.id ?? 'new'} target={openItem} onClose={() => setOpenItem(null)} />}
 
