@@ -37,6 +37,12 @@ function axisTicks(max) {
   return ticks
 }
 
+// "Sprint 3 · Expedientes, documentos…" -> { short: 'Sprint 3', desc: 'Expedientes, documentos…' }
+export function splitSprint(name = '') {
+  const [short, ...rest] = name.split('·')
+  return { short: short.trim(), desc: rest.join('·').trim() }
+}
+
 const shortDate = d => d.toLocaleDateString('es-PA', { day: '2-digit', month: 'short' })
 
 // Burndown: puntos (o ítems) restantes del sprint (guía ideal vs. real, día a día)
@@ -143,7 +149,6 @@ export function BurndownChart({ series, total, unit = 'pts', title = 'Burndown' 
 export function VelocityChart({ data, unit = 'Puntos cerrados' }) {
   const [box, W] = useWidth()
   const [hover, setHover] = useState(null)
-  const [showTable, setShowTable] = useState(false)
   if (!data.length) return null
 
   const plotW = W - PAD.left - PAD.right
@@ -154,7 +159,11 @@ export function VelocityChart({ data, unit = 'Puntos cerrados' }) {
   const y = v => PAD.top + plotH - v / max * plotH
   const ticks = axisTicks(max)
   // Nombre completo si cabe; si no, "S1", "S2"…
-  const label = name => (slot >= 72 ? name : name.replace(/^Sprint\s*/i, 'S'))
+  // En el eje solo va "Sprint 3" (o "S3" si no cabe); la descripción completa va en la lista de abajo
+  const label = name => {
+    const short = splitSprint(name).short
+    return slot >= 64 ? short : short.replace(/^Sprint\s*/i, 'S')
+  }
 
   return (
     <div className="chart-card">
@@ -196,14 +205,19 @@ export function VelocityChart({ data, unit = 'Puntos cerrados' }) {
           <><span><i className="chart-key bar" />Sprint cerrado</span><span><i className="chart-key bar in-progress" />En curso</span></>
         )}
       </div>
-      <TableToggle open={showTable} setOpen={setShowTable}>
-        <thead><tr><th>Sprint</th><th className="num">{unit}</th></tr></thead>
-        <tbody>
-          {data.map(d => (
-            <tr key={d.sprint.id}><td>{d.sprint.name}{d.inProgress ? ' (en curso)' : ''}</td><td className="num">{d.points}</td></tr>
-          ))}
-        </tbody>
-      </TableToggle>
+      <ol className="sprint-key-list">
+        {data.map((d, i) => {
+          const { short, desc } = splitSprint(d.sprint.name)
+          return (
+            <li key={d.sprint.id} className={hover === i ? 'hover' : ''}
+                onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
+              <b>{short}</b>
+              <span className="sprint-key-desc">{desc || '—'}{d.inProgress ? ' (en curso)' : ''}</span>
+              <span className="sprint-key-val">{d.points}</span>
+            </li>
+          )
+        })}
+      </ol>
     </div>
   )
 }

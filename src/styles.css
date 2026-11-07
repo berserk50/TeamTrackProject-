@@ -977,3 +977,12 @@ button.twisty:hover { background: var(--surface-3); color: var(--text); }
   .member-table .col-opt { display: none; }
   .split-num { font-size: 24px; }
 }
+
+/* Velocidad: lista con la descripción completa de cada sprint debajo del gráfico */
+.sprint-key-list { list-style: none; margin: 4px 0 8px; padding: 0; display: flex; flex-direction: column; font-size: 13px; }
+.sprint-key-list li { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding: 6px 8px; border-radius: var(--radius-sm); }
+.sprint-key-list li + li { border-top: 1px solid var(--border); }
+.sprint-key-list li.hover { background: var(--surface-2); }
+.sprint-key-list b { font-weight: 600; white-space: nowrap; }
+.sprint-key-desc { color: var(--text-2); }
+.sprint-key-val { font-weight: 600; font-variant-numeric: tabular-nums; }

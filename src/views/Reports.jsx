@@ -7,7 +7,7 @@ import {
   BurndownChart, VelocityChart, StatusSplitCard, CategoryBarsCard, StackedBar, StatusLegend,
   STATUS_GROUPS, countByGroup,
 } from '../components/charts'
-import { exportWorkItems, toCSV, downloadCSV } from '../lib/csv'
+import { exportItemsXlsx } from '../lib/export'
 
 // Días (desde field='estado', new_value='cerrada') en que cada ítem llegó a Cerrada por última vez
 function useClosures(sprintId, itemIds) {
@@ -147,8 +147,8 @@ function MemberBreakdown({ rows, showPts, showHours }) {
 }
 
 export default function Reports() {
-  const { items, sprints, activeSprint, activeMembers, membersById, sprintsById } = useApp()
-  const ctx = { membersById, sprintsById }
+  const { items, itemsById, sprints, activeSprint, activeMembers, membersById, sprintsById } = useApp()
+  const ctx = { itemsById, membersById, sprintsById }
 
   // Sprint a analizar: el activo; si no hay, el que cubre la fecha de hoy; si no, el más reciente
   const [sprintId, setSprintId] = useState(() => {
@@ -193,19 +193,24 @@ export default function Reports() {
   const typeRows = TYPE_KEYS.map(k => ({ key: k, label: TYPES[k].label, items: sprintItems.filter(i => i.type === k) }))
   const prioRows = PRIORITY_KEYS.map(k => ({ key: k, label: PRIORITIES[k].label, items: sprintItems.filter(i => i.priority === k) }))
 
-  function exportMembers() {
-    const cols = [
-      { label: 'Integrante', get: r => r.member?.full_name ?? 'Sin asignar' },
-      { label: 'Total', get: r => r.total },
-      ...STATUS_GROUPS.map(g => ({ label: g.label, get: r => r.counts[g.key] })),
-      { label: 'Abiertas', get: r => r.open },
-      { label: 'Avance %', get: r => (r.total ? Math.round(r.closed / r.total * 100) : 0) },
-      { label: 'Vencidas', get: r => r.overdue },
-      { label: 'Puntos cerrados', get: r => r.ptsDone },
-      { label: 'Puntos totales', get: r => r.ptsTotal },
-      { label: 'Horas estimadas', get: r => r.hours },
-    ]
-    downloadCSV(`teamtrack-${sprint.name}-por-integrante.csv`, toCSV(cols, members))
+  // Excel del sprint: hoja "Tareas" con TODOS sus ítems (incluidas las canceladas) y hoja "Por integrante"
+  function exportSprint() {
+    const all = items.filter(i => i.sprint_id === sprint.id)
+    const memberSheet = {
+      name: 'Por integrante',
+      columns: [
+        { label: 'Integrante', width: 24 }, { label: 'Total', width: 8 },
+        ...STATUS_GROUPS.map(g => ({ label: g.label, width: 12 })),
+        { label: 'Abiertas', width: 9 }, { label: 'Avance %', width: 9 }, { label: 'Vencidas', width: 9 },
+        { label: 'Puntos cerrados', width: 9 }, { label: 'Puntos totales', width: 9 }, { label: 'Horas estimadas', width: 9 },
+      ],
+      rows: members.map(r => [
+        r.member?.full_name ?? 'Sin asignar', r.total, ...STATUS_GROUPS.map(g => r.counts[g.key]),
+        r.open, r.total ? Math.round(r.closed / r.total * 100) : 0, r.overdue, r.ptsDone, r.ptsTotal, r.hours,
+      ]),
+    }
+    const short = sprint.name.split('·')[0].trim()
+    exportItemsXlsx(`TeamTrack - ${short}.xlsx`, 'Tareas', all, ctx, [memberSheet])
   }
 
   return (
@@ -221,9 +226,8 @@ export default function Reports() {
             </select>
           </label>
         )}
-        <button className="btn ghost sm" onClick={() => exportWorkItems('teamtrack-backlog.csv', items, ctx)}>Exportar backlog</button>
-        {sprint && <button className="btn ghost sm" onClick={() => exportWorkItems(`teamtrack-${sprint.name}.csv`, sprintItems, ctx)}>Exportar sprint</button>}
-        {sprint && <button className="btn ghost sm" onClick={exportMembers}>Exportar por integrante</button>}
+        {sprint && <button className="btn ghost sm" onClick={exportSprint}>Exportar sprint (Excel)</button>}
+        <button className="btn ghost sm" onClick={() => exportItemsXlsx('TeamTrack - Backlog completo.xlsx', 'Backlog', items, ctx)}>Exportar backlog (Excel)</button>
       </PageHeader>
 
       {!sprint ? <p className="hint">Aún no hay sprints. Crea uno en la vista Sprints para ver sus reportes.</p> : (
